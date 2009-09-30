@@ -25,7 +25,7 @@ class CMSPluginBase(admin.ModelAdmin):
                 class DefaultModelForm(ModelForm):
                     class Meta:
                         model = self.model
-                        exclude = ('page', 'position', 'placeholder', 'language', 'plugin_type')
+                        exclude = ('content_type', 'object_id', 'position', 'placeholder', 'language', 'plugin_type')
                 self.form = DefaultModelForm
         
             # Move 'advanced' fields into separate fieldset.
@@ -80,6 +80,7 @@ class CMSPluginBase(admin.ModelAdmin):
         Not sure if there will be plugin permission requirement in future, but
         if, then this must be changed.
         """
+        return True
         return self.cms_plugin_instance.page.has_change_permission(request)
     has_delete_permission = has_change_permission = has_add_permission
     

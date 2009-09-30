@@ -409,7 +409,7 @@ class PageAdmin(admin.ModelAdmin):
                                     bases[int(plugin.cmsplugin_ptr_id)].set_base_attr(plugin)
                                     plugin_list.append(plugin)
                         else:
-                            plugin_list = CMSPlugin.objects.filter(page=obj, language=language, placeholder=placeholder.name, parent=None).order_by('position')
+                            plugin_list = CMSPlugin.objects.filter(language=language, placeholder=placeholder.name, parent=None).order_by('position')
                     widget = PluginEditor(attrs={'installed':installed_plugins, 'list':plugin_list})
                     form.base_fields[placeholder.name] = CharField(widget=widget, required=False)
         else: 

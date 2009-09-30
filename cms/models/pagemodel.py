@@ -16,6 +16,7 @@ from cms.models import signals as cms_signals
 from cms.utils.page import get_available_slug, check_title_slugs
 from cms.exceptions import NoHomeFound
 from cms.utils.helpers import reversion_register
+from django.contrib.contenttypes import generic
 
 class Page(MpttPublisher):
     """
@@ -60,6 +61,8 @@ class Page(MpttPublisher):
     
     login_required = models.BooleanField(_("login required"),default=False)
     menu_login_required = models.BooleanField(_("menu login required"),default=False, help_text=_("only show this page in the menu if the user is logged in"))
+
+    cms_plugins = generic.GenericRelation('cms.CMSPlugin')
     
     # Managers
     objects = PageManager()
@@ -123,7 +126,7 @@ class Page(MpttPublisher):
         for page in descendants:
            
             titles = list(page.title_set.all())
-            plugins = list(page.cmsplugin_set.all().order_by('tree_id', '-rght'))
+            plugins = list(page.cms_plugins.all().order_by('tree_id', '-rght'))
             origin_id = page.id
             page.old_pk = page.pk
             page.pk = None
@@ -716,4 +719,4 @@ class Page(MpttPublisher):
             
         return moderation_value 
         
-reversion_register(Page, follow=["title_set", "cmsplugin_set", "pagepermission_set"])
+reversion_register(Page, follow=["title_set", "cms_plugins", "pagepermission_set"])

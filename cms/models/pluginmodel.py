@@ -11,6 +11,8 @@ from publisher import MpttPublisher
 from django.template.context import Context
 from cms import settings
 from cms.utils.helpers import reversion_register
+from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.models import ContentType 
 
 class PluginModelBase(ModelBase):
     """
@@ -24,15 +26,19 @@ class PluginModelBase(ModelBase):
                 found = True
         if found:
             if new_class._meta.db_table.startswith("%s_" % new_class._meta.app_label):
-                table = "cmsplugin_" + new_class._meta.db_table.partition("%s_" % new_class._meta.app_label)[2]
+                table = "cmsplugin_" + new_class._meta.db_table.split("%s_" % new_class._meta.app_label, 1)[1]
                 new_class._meta.db_table = table
         return new_class 
          
     
 class CMSPlugin(MpttPublisher):
     __metaclass__ = PluginModelBase
+
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+
+    content_object = generic.GenericForeignKey()
     
-    page = models.ForeignKey(Page, verbose_name=_("page"), editable=False)
     parent = models.ForeignKey('self', blank=True, null=True, editable=False)
     position = models.PositiveSmallIntegerField(_("position"), blank=True, null=True, editable=False)
     placeholder = models.CharField(_("slot"), max_length=50, db_index=True, editable=False)
@@ -40,10 +46,10 @@ class CMSPlugin(MpttPublisher):
     plugin_type = models.CharField(_("plugin_name"), max_length=50, db_index=True, editable=False)
     creation_date = models.DateTimeField(_("creation date"), editable=False, default=datetime.now)
     
-    level = models.PositiveIntegerField(db_index=True, editable=False)
-    lft = models.PositiveIntegerField(db_index=True, editable=False)
-    rght = models.PositiveIntegerField(db_index=True, editable=False)
-    tree_id = models.PositiveIntegerField(db_index=True, editable=False)
+    level = models.PositiveIntegerField(db_index=True, editable=False, null=True)
+    lft = models.PositiveIntegerField(db_index=True, editable=False, null=True)
+    rght = models.PositiveIntegerField(db_index=True, editable=False, null=True)
+    tree_id = models.PositiveIntegerField(db_index=True, editable=False, null=True)
     
     def __unicode__(self):
         return str(self.id) #""
@@ -132,10 +138,9 @@ class CMSPlugin(MpttPublisher):
             super(CMSPlugin, self).save_base(cls=self.__class__)
         else:
             super(CMSPlugin, self).save()
-            
     
     def set_base_attr(self, plugin):
-        for attr in ['parent_id', 'page_id', 'placeholder', 'language', 'plugin_type', 'creation_date', 'level', 'lft', 'rght', 'position', 'tree_id']:
+        for attr in ['parent_id', 'object_id', 'content_type_id', 'placeholder', 'language', 'plugin_type', 'creation_date', 'level', 'lft', 'rght', 'position', 'tree_id']:
             setattr(plugin, attr, getattr(self, attr))
     
     def _publisher_get_public_copy(self):

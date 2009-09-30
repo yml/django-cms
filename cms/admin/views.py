@@ -13,6 +13,8 @@ from django.views.decorators.http import require_POST
 from cms.utils.admin import render_admin_menu_item
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 
+from django.contrib.contenttypes.models import ContentType
+
 @require_POST
 def change_status(request, page_id):
     """
@@ -96,8 +98,10 @@ def edit_plugin(request, plugin_id, admin_site):
     if not 'history' in request.path and not 'recover' in request.path:
         cms_plugin = get_object_or_404(CMSPlugin, pk=plugin_id)
         instance, admin = cms_plugin.get_plugin_instance(admin_site)
+        """
         if not cms_plugin.page.has_change_permission(request):
             raise PermissionDenied 
+        """
     else:
         # history view with reversion
         from reversion.models import Version
