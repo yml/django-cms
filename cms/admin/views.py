@@ -58,6 +58,7 @@ def add_plugin(request):
         object_id = request.POST.get('object_id', None)
         parent = None
         ctype = ContentType.objects.get(app_label=app, model=model)
+        content_object = ctype.get_object_for_this_type(pk=object_id)
         if object_id:
             placeholder = request.POST['placeholder'].lower()
             language = request.POST['language']
@@ -66,12 +67,14 @@ def add_plugin(request):
             parent_id = request.POST['parent_id']
             parent = get_object_or_404(CMSPlugin, pk=parent_id)
             placeholder = parent.placeholder
+            content_object = parent.content_object
+            object_id = content_object.pk
             language = parent.language
             position = None
-        """
-        if not page.has_change_permission(request):
+
+        if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
             return HttpResponseForbidden(_("You do not have permission to change this page"))
-        """
+
         # Sanity check to make sure we're not getting bogus values from JavaScript:
         if not language or not language in [ l[0] for l in settings.LANGUAGES ]:
             return HttpResponseBadRequest(_("Language must be set to a supported language!"))
@@ -82,8 +85,8 @@ def add_plugin(request):
             plugin.parent = parent
         plugin.save()
         if 'reversion' in settings.INSTALLED_APPS:
-            page.save()
-            save_all_plugins(request, page)
+            content_object.save()
+            save_all_plugins(request, content_object)
             revision.user = request.user
             plugin_name = unicode(plugin_pool.get_plugin(plugin_type).name)
             revision.comment = _(u"%(plugin_name)s plugin added to %(placeholder)s") % {'plugin_name':plugin_name, 'placeholder':placeholder}
