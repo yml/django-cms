@@ -4,7 +4,11 @@ $(document).ready(function() {
         var pluginvalue = select.attr('value');
         var placeholder = $(this).parent().parent().parent().children("label").attr("for").split("id_")[1];
         var splits = window.location.href.split("/");
-        var page_id = splits[splits.length-2];
+        var object_id = splits[splits.length-2];
+        var model = splits[splits.length-3];
+        var app = splits[splits.length-4];
+        var language = $('#id_language').attr('value');
+        var target_div = $(this).parent().parent().parent().children('div.plugin-editor');
 
         var language = $('input.language_button.selected').attr('name');
 
@@ -20,7 +24,7 @@ $(document).ready(function() {
         if (pluginvalue) {
             var pluginname = select.children('[selected]').text();
             var ul_list = $(this).parent().parent().children("ul.plugin-list");
-            $.post("add-plugin/", { page_id:page_id, placeholder:placeholder, plugin_type:pluginvalue, language:language }, function(data){
+            $.post("add-plugin/", { object_id:object_id, app:app, model:model, placeholder:placeholder, plugin_type:pluginvalue, language:language }, function(data){
                 if ('error' != data) {
                     loadPluginForm(target_div, data);
                     ul_list.append('<li id="plugin_' + data + '" class="' + pluginvalue + ' active"><span class="drag"></span><span class="text">' + pluginname + '</span><span class="delete"></span></li>');

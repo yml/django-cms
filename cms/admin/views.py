@@ -54,29 +54,29 @@ def add_plugin(request):
         return HttpResponse(str("error"))
     if request.method == "POST":
         plugin_type = request.POST['plugin_type']
-        page_id = request.POST.get('page_id', None)
+        app, model = request.POST.get('app'), request.POST.get('model')
+        object_id = request.POST.get('object_id', None)
         parent = None
-        if page_id:
-            page = get_object_or_404(Page, pk=page_id)
+        ctype = ContentType.objects.get(app_label=app, model=model)
+        if object_id:
             placeholder = request.POST['placeholder'].lower()
             language = request.POST['language']
-            position = CMSPlugin.objects.filter(page=page, language=language, placeholder=placeholder).count()
+            position = CMSPlugin.objects.filter(content_type=ctype, object_id=object_id, language=language, placeholder=placeholder).count()
         else:
             parent_id = request.POST['parent_id']
             parent = get_object_or_404(CMSPlugin, pk=parent_id)
-            page = parent.page
             placeholder = parent.placeholder
             language = parent.language
             position = None
-
+        """
         if not page.has_change_permission(request):
             return HttpResponseForbidden(_("You do not have permission to change this page"))
-
+        """
         # Sanity check to make sure we're not getting bogus values from JavaScript:
         if not language or not language in [ l[0] for l in settings.LANGUAGES ]:
             return HttpResponseBadRequest(_("Language must be set to a supported language!"))
         
-        plugin = CMSPlugin(page=page, language=language, plugin_type=plugin_type, position=position, placeholder=placeholder) 
+        plugin = CMSPlugin(content_type=ctype, object_id=object_id, language=language, plugin_type=plugin_type, position=position, placeholder=placeholder) 
 
         if parent:
             plugin.parent = parent
