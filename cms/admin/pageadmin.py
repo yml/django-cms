@@ -37,6 +37,7 @@ from django.utils.encoding import force_unicode
 from django.utils.functional import curry
 from django.utils.translation import ugettext as _
 from os.path import join
+from django.contrib.contenttypes.models import ContentType
 
 class PageAdmin(admin.ModelAdmin):
     form = PageForm
@@ -409,7 +410,8 @@ class PageAdmin(admin.ModelAdmin):
                                     bases[int(plugin.cmsplugin_ptr_id)].set_base_attr(plugin)
                                     plugin_list.append(plugin)
                         else:
-                            plugin_list = CMSPlugin.objects.filter(language=language, placeholder=placeholder.name, parent=None).order_by('position')
+                            ctype = ContentType.objects.get_for_model(obj.__class__)
+                            plugin_list = CMSPlugin.objects.filter(content_type=ctype, object_id=obj.pk, language=language, placeholder=placeholder.name, parent=None).order_by('position')
                     widget = PluginEditor(attrs={'installed':installed_plugins, 'list':plugin_list})
                     form.base_fields[placeholder.name] = CharField(widget=widget, required=False)
         else: 
