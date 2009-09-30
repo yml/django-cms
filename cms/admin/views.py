@@ -189,22 +189,22 @@ if 'reversion' in settings.INSTALLED_APPS:
 def move_plugin(request):
     if request.method == "POST" and not 'history' in request.path:
         pos = 0
-        page = None
+        content_object = None
         for id in request.POST['ids'].split("_"):
             plugin = CMSPlugin.objects.get(pk=id)
-            if not page:
-                page = plugin.page
+            if not content_object:
+                content_object = plugin.content_object
             
-            if not page.has_change_permission(request):
+            if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
                 raise Http404
 
             if plugin.position != pos:
                 plugin.position = pos
                 plugin.save()
             pos += 1
-        if page and 'reversion' in settings.INSTALLED_APPS:
-            page.save()
-            save_all_plugins(request, page)
+        if content_object and 'reversion' in settings.INSTALLED_APPS:
+            content_object.save()
+            save_all_plugins(request, content_object)
             revision.user = request.user
             revision.comment = unicode(_(u"Plugins where moved")) 
         return HttpResponse(str("ok"))
