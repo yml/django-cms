@@ -218,12 +218,12 @@ def remove_plugin(request):
     if request.method == "POST" and not 'history' in request.path:
         plugin_id = request.POST['plugin_id']
         plugin = get_object_or_404(CMSPlugin, pk=plugin_id)
-        page = plugin.page
+        content_object = plugin.content_object
         
-        if not page.has_change_permission(request):
-                raise Http404
+        if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
+            raise Http404
         
-        if settings.CMS_MODERATOR and page.is_under_moderation():
+        if settings.CMS_MODERATOR and hasattr(content_object, 'is_under_moderation') and content_object.is_under_moderation():
             plugin.delete()
         else:
             plugin.delete_with_public()
@@ -231,8 +231,8 @@ def remove_plugin(request):
         plugin_name = unicode(plugin_pool.get_plugin(plugin.plugin_type).name)
         comment = _(u"%(plugin_name)s plugin at position %(position)s in %(placeholder)s was deleted.") % {'plugin_name':plugin_name, 'position':plugin.position, 'placeholder':plugin.placeholder}
         if 'reversion' in settings.INSTALLED_APPS:
-            save_all_plugins(request, page)
-            page.save()
+            save_all_plugins(request, content_object)
+            content_object.save()
             revision.user = request.user
             revision.comment = comment
         return HttpResponse("%s,%s" % (plugin_id, comment))
