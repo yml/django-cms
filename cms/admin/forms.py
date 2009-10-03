@@ -52,7 +52,6 @@ class PageAddForm(forms.ModelForm):
             slug = ""
         page = self.instance
         lang = cleaned_data['language']
-        
         if 'parent' not in cleaned_data:
             cleaned_data['parent'] = None
         parent = cleaned_data.get('parent', None)
@@ -64,6 +63,8 @@ class PageAddForm(forms.ModelForm):
     
     def clean_slug(self):
         slug = slugify(self.cleaned_data['slug'])
+        if not slug:
+            raise ValidationError("Slug must not be empty.")
         return slug
     
     def clean_language(self):
