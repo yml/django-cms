@@ -42,19 +42,12 @@ from django.contrib.contenttypes.models import ContentType
 
 class PluginAdmin(admin.ModelAdmin):
 
-    list_filter = ['published', 'changed_by']
-    
-    exclude = ['created_by', 'changed_by']
-    mandatory_placeholders = ('title', 'slug', 'site') 
+    mandatory_placeholders = ('title', 'slug', 'language', 'site') 
     top_fields = []
-    general_fields = ['title', 'slug', ('published', )] 
-    add_general_fields = ['title', 'slug']
-    hidden_fields = ['language', 'site']
+    general_fields = ['title', 'slug', 'language'] 
+    add_general_fields = ['title', 'slug', 'language']
+    hidden_fields = ['site']
     additional_hidden_fields = []
-    if settings.CMS_SHOW_START_DATE:
-        advanced_fields.append('publication_date')
-    if settings.CMS_SHOW_END_DATE:
-        advanced_fields.append( 'publication_end_date')
 
     # take care with changing fieldsets, get_fieldsets() method removes some
     # fields depending on permissions, but its very static!!
@@ -73,10 +66,6 @@ class PluginAdmin(admin.ModelAdmin):
         (None, {
             'fields': general_fields,
             'classes': ('general',),
-        }),
-        (_('Basic Settings'), {
-            'fields': top_fields,
-            'classes': ('low',),
         }),
         (_('Hidden'), {
             'fields': hidden_fields + additional_hidden_fields,
@@ -193,8 +182,6 @@ class PluginAdmin(admin.ModelAdmin):
                     plugin_list = CMSPlugin.objects.filter(content_type=ctype, object_id=obj.pk, language=language, placeholder=placeholder_name, parent=None).order_by('position')
                 widget = PluginEditor(attrs={'installed':installed_plugins, 'list':plugin_list})
                 form.base_fields[placeholder_name] = CharField(widget=widget, required=False)
-        form.base_fields['language'] = CharField()
-        form.base_fields['language'].initial = 'no'
         form.base_fields['site'].initial = request.session.get('cms_admin_site', None)
         
         return form

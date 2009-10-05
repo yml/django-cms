@@ -13,7 +13,7 @@ $(document).ready(function() {
         var language = $('input.language_button.selected').attr('name');
 
         if (!language) {
-            language = $('input[name=language]').attr("value");
+            language = $('input[name=language],select[name=language]').attr("value");
         }
 
         if (!language) {
