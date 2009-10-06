@@ -15,4 +15,4 @@ class LinkForm(ModelForm):
     
     class Meta:
         model = Link
-        exclude = ('page', 'position', 'placeholder', 'language', 'plugin_type')
+        exclude = ('content_type', 'object_id', 'position', 'placeholder', 'language', 'plugin_type')

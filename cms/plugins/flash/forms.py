@@ -5,4 +5,4 @@ class FlashForm(forms.ModelForm):
     
     class Meta:
         model = Flash
-        exclude = ('page', 'position', 'placeholder', 'language', 'plugin_type')
+        exclude = ('content_type', 'object_id', 'position', 'placeholder', 'language', 'plugin_type')

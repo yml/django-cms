@@ -5,4 +5,4 @@ class VideoForm(forms.ModelForm):
     
     class Meta:
         model = Video
-        exclude = ('page', 'position', 'placeholder', 'language', 'plugin_type')
+        exclude = ('content_type', 'object_id', 'position', 'placeholder', 'language', 'plugin_type')
