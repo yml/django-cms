@@ -1,7 +1,7 @@
 from cms import settings
 from cms.admin.change_list import CMSChangeList
 from cms.admin.dialog.views import get_copy_dialog
-from cms.admin.forms import PageForm, PageAddForm
+from cms.admin.forms import PageAddForm
 from cms.admin.permissionadmin import PAGE_ADMIN_INLINES, \
     PagePermissionInlineAdmin
 from cms.admin.utils import get_placeholders
@@ -27,7 +27,10 @@ from django.contrib.admin.util import unquote
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.core.urlresolvers import reverse
-from django.forms import Widget, Textarea, CharField
+from django import forms
+from django.forms.forms import get_declared_fields
+from django.forms import Widget, Textarea, CharField, ModelForm
+from django.forms.models import ModelFormMetaclass 
 from django.http import HttpResponseRedirect, HttpResponse, Http404,\
     HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import render_to_response, get_object_or_404
@@ -36,21 +39,21 @@ from django.template.defaultfilters import title
 from django.utils.encoding import force_unicode
 from django.utils.functional import curry
 from django.utils.translation import ugettext as _
-from django import forms
 from os.path import join
 from django.contrib.contenttypes.models import ContentType
 
 class PluginAdmin(admin.ModelAdmin):
 
-    mandatory_placeholders = ('title', 'slug', 'language', 'site') 
+    mandatory_placeholders = ('title', 'slug', 'language') 
     top_fields = []
-    general_fields = ['title', 'slug', 'language'] 
-    add_general_fields = ['title', 'slug', 'language']
-    hidden_fields = ['site']
+    general_fields = ['title', 'slug'] 
+    add_general_fields = ['title', 'slug']
+    hidden_fields = ['language']
     additional_hidden_fields = []
 
     # take care with changing fieldsets, get_fieldsets() method removes some
     # fields depending on permissions, but its very static!!
+    # don't define fieldsets directly since some fields are not in the form yet
     add_fieldsets = [
         (None, {
             'fields': add_general_fields,
@@ -62,7 +65,7 @@ class PluginAdmin(admin.ModelAdmin):
         }),
     ]
     
-    fieldsets = [
+    update_fieldsets = [
         (None, {
             'fields': general_fields,
             'classes': ('general',),
@@ -146,8 +149,8 @@ class PluginAdmin(admin.ModelAdmin):
         """
         
         if obj: # edit
-            given_fieldsets = deepcopy(self.fieldsets)
-            for placeholder_name in self.placeholders:
+            given_fieldsets = deepcopy(self.update_fieldsets)
+            for placeholder_name in self.get_placeholders(request, obj):
                 if placeholder_name not in self.mandatory_placeholders:
                     if placeholder_name in settings.CMS_PLACEHOLDER_CONF and "name" in settings.CMS_PLACEHOLDER_CONF[placeholder_name]:
                         name = settings.CMS_PLACEHOLDER_CONF[placeholder_name]["name"]
@@ -158,6 +161,9 @@ class PluginAdmin(admin.ModelAdmin):
             given_fieldsets = deepcopy(self.add_fieldsets)
 
         return given_fieldsets
+
+    def get_placeholders(self, request, obj):
+        return self.placeholders
 
     def get_form(self, request, obj=None, **kwargs):
         """
@@ -173,7 +179,7 @@ class PluginAdmin(admin.ModelAdmin):
             form = super(PluginAdmin, self).get_form(request, obj, **kwargs)
             self.inlines = []
    
-        for placeholder_name in self.placeholders:
+        for placeholder_name in self.get_placeholders(request, obj):
             if placeholder_name not in self.mandatory_placeholders:
                 installed_plugins = plugin_pool.get_all_plugins(placeholder_name)
                 plugin_list = []
@@ -182,8 +188,9 @@ class PluginAdmin(admin.ModelAdmin):
                     plugin_list = CMSPlugin.objects.filter(content_type=ctype, object_id=obj.pk, language=language, placeholder=placeholder_name, parent=None).order_by('position')
                 widget = PluginEditor(attrs={'installed':installed_plugins, 'list':plugin_list})
                 form.base_fields[placeholder_name] = CharField(widget=widget, required=False)
-        form.base_fields['site'].initial = request.session.get('cms_admin_site', None)
-        
+        if not 'language' in form.base_fields:
+            form.base_fields['language'] = CharField(required=True)
+        form.base_fields['language'].initial = language        
         return form
     
  

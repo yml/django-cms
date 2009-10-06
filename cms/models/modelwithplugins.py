@@ -7,10 +7,6 @@ from django.contrib.contenttypes import generic
 
 class ModelWithPlugins(models.Model):
    
-    language = models.CharField(max_length=2, choices=settings.LANGUAGES)
- 
-    site = models.ForeignKey(Site, help_text=_('The site the object is accessible at.'), verbose_name=_("site"))
-    
     cms_plugins = generic.GenericRelation('cms.CMSPlugin')
 
     class Meta:
