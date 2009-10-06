@@ -699,5 +699,9 @@ class Page(MpttPublisher):
         self._moderation_value_cache_for_user_id = user
             
         return moderation_value 
+
+    def delete(self):
+        self.cms_plugins.all().delete()
+        super(Page, self).delete()
         
 reversion_register(Page, follow=["title_set", "cms_plugins", "pagepermission_set"])

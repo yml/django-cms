@@ -28,3 +28,7 @@ class ModelWithPlugins(models.Model):
         This location can be customised using the CMS_PAGE_MEDIA_PATH setting
         """
         return join(settings.CMS_PAGE_MEDIA_PATH, "%d/%s" % (self.id, self.__class__.__name__.lower()), filename)
+
+    def delete(self):
+        self.cms_plugins.all().delete()
+        super(ModelWithPlugins, self).delete() 
