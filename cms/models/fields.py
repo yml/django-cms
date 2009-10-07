@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
-from cms import settings
 
 class TranslationDescriptor(object):
 
@@ -29,8 +28,7 @@ class TranslationDescriptor(object):
         try:
             return self.instance.__dict__[self.languages_cache_name]
         except KeyError:
-            all_languages = self.model.objects.filter(self.translationmodel_field=self.instance)
-                .values_list("language", flat=True).distinct()
+            all_languages = self.model.objects.filter(**{self.translationmodel_field: self.instance}).values_list("language", flat=True).distinct()
             all_languages = list(all_languages)
             all_languages.sort()
             self.instance.__dict__[self.languages_cache_name] = all_languages
@@ -60,7 +58,7 @@ class TranslationDescriptor(object):
         if name.find('_') and name.split('_', -1)[1] in [l[0] in settings.LANGUAGES]:
             lang = name.split('_', -1)[1]
             attr = name.split('_', -1)[0] 
-            return self.get_translation_obj_attribute(self, attr, lang) 
+            return self.get_translation_obj_attribute(self, attr, lang)
  
     def _get_translation_cache(self, language=None):
         if not language:
@@ -75,35 +73,120 @@ class TranslationDescriptor(object):
                 if lang in self.instance.__dict__[self.translation_cache_name]:
                     return lang
             load = True
-            else:
-                translation = self.model.objects.get_translation(self, language)
-                if translation:
-                    self.instance.__dict__[self.translation_cache_name][translation.language] = translation
-                language = translation.language
+        else:
+            translation = self.model.objects.get_translation(self, language)
+            if translation:
+                self.instance.__dict__[self.translation_cache_name][translation.language] = translation
+            language = translation.language
         return language
 
     def reload(self):
         del self.instance.__dict__[self.translation_cache_name]
 
-    def load_revision(self, version_id):
-       if version_id:
-            from reversion.models import Version
-            version = get_object_or_404(Version, pk=version_id)
+    def load_revision(self, revision):
+       if revision:
             content_type = ContentType.objects.get_for_model(self.model)
             revs = [related_version.object_version 
-                for related_version in version.revision.version_set.filter(content_type=content_type)]
+                for related_version in revision.version_set.filter(content_type=content_type)]
             for rev in revs:
                 obj = rev.object
                 self.instance.__dict__[self.translation_cache_name][obj.language] = obj
 
+    def copy_to(self, object):
+        for obj in getattr(self.instance, self.reverse_name).all():
+            obj.pk = None
+            setattr(obj, self.translationmodel_field, object)
+            obj.save()
+     
+class TranslationsManager(models.Manager): # um, just use the regular manager and override if publisher is needed?
+
+    def __init__(self, translationmodel_field):
+        self.translationmodel_field
+
+    def get_translation(self, for_object, language, language_fallback=False):
+        """
+        Gets the latest content for a particular page and language. Falls back
+        to another language if wanted.
+        """
+        try:
+            translation = self.get(language=language, **{translationmodel_field: for_object})
+            return translation 
+        except self.model.DoesNotExist:
+            if language_fallback:
+                try:
+                    translations = self.filter(page=page)
+                    fallbacks = get_fallback_languages(language)
+                    for l in fallbacks:
+                        for translation in translations:
+                            if l == translation.language:
+                                return translation
+                    return None
+                except self.model.DoesNotExist:
+                    pass
+            else:
+                raise
+        return None
+    
+    def get_slug(self, slug, site=None, use_site=False):
+        """
+        Returns the latest slug for the given slug and checks if it's available
+        on the current site.
+        """
+        kw = {}
+        if use_site:
+            if not site:
+                site = Site.objects.get_current()
+            kw[self.translationmodel_field + '__site'] = site
+        kw['slug'] = slug
+
+        try:
+            translations = self.filter(**kw).select_related()#'page')
+        except self.model.DoesNotExist:
+            return None 
+        else:
+            return translations 
+        
+    def set_or_create(self, for_object, language, **kwargs):
+        """
+        set or create a title for a particular page and language
+        """
+        try:
+            obj = self.get(language=language, **{self.translationmodel_field: for_object})
+            for key, value in kwargs:
+                if not value is None:
+                    setattr(obj, key, value)
+
+        except self.model.DoesNotExist:
+            kwargs[self.translationmodel_field] = for_object
+            obj = self.model(language=language, **kwargs)
+
+        self.set_custom(obj, **kwargs)
+
+        obj.save()
+        return obj
+
+    def set_custom(self, obj, **kwargs):
+        if 'overwrite_url' in kwargs:
+            obj.has_url_overwrite = True
+            obj.path = kwargs['overwrite_url']
+        else:
+            obj.has_url_overwrite = False
+
 class TranslationForeignKey(models.ForeignKey):
 
     def __init__(self, to, **kwargs):
-        self.translations_attribute = kwargs.pop('translations_attribute')
-        super(TranslationForeignKey, __init__(to, **kwargs)
+        self.translations_attribute = kwargs.pop('translation_attribute')
+        #self.translations_manager = kwargs.pop('translations_manager', TranslationsManageer)
+        super(TranslationForeignKey, self).__init__(to, **kwargs)
+
+    """
+    def contribute_to_class(self, cls, name):
+        super(TranslationForeignKey, self).contribute_to_class(cls, name)
+        self.translations_manager(self.field.name).contribute_to_class(cls, 'objects')
 
     def contribute_to_related_class(self, cls, related):
         super(TranslationForeignKey, self).contribute_to_related_class(cls, related)
         setattr(cls, self.translations_attribute, 
             TranslationDescriptor(self.__class__, self.field.name, related.get_accessor_name())
         )
+    """
