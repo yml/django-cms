@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+from cms.utils.i18n import get_fallback_languages
 
 class TranslationDescriptor(object):
 
@@ -101,7 +102,8 @@ class TranslationDescriptor(object):
 class TranslationsManager(models.Manager): # um, just use the regular manager and override if publisher is needed?
 
     def __init__(self, translationmodel_field):
-        self.translationmodel_field
+        self.translationmodel_field = translationmodel_field
+        super(TranslationsManager, self).__init__()
 
     def get_translation(self, for_object, language, language_fallback=False):
         """
@@ -114,7 +116,7 @@ class TranslationsManager(models.Manager): # um, just use the regular manager an
         except self.model.DoesNotExist:
             if language_fallback:
                 try:
-                    translations = self.filter(page=page)
+                    translations = self.filter(**{translationmodel_field: for_object})
                     fallbacks = get_fallback_languages(language)
                     for l in fallbacks:
                         for translation in translations:
@@ -176,17 +178,15 @@ class TranslationForeignKey(models.ForeignKey):
 
     def __init__(self, to, **kwargs):
         self.translations_attribute = kwargs.pop('translation_attribute')
-        #self.translations_manager = kwargs.pop('translations_manager', TranslationsManageer)
+        self.translations_manager = kwargs.pop('translations_manager', TranslationsManager)
         super(TranslationForeignKey, self).__init__(to, **kwargs)
 
-    """
     def contribute_to_class(self, cls, name):
         super(TranslationForeignKey, self).contribute_to_class(cls, name)
-        self.translations_manager(self.field.name).contribute_to_class(cls, 'objects')
+        cls.add_to_class('objects', self.translations_manager(self.name))
 
     def contribute_to_related_class(self, cls, related):
         super(TranslationForeignKey, self).contribute_to_related_class(cls, related)
         setattr(cls, self.translations_attribute, 
-            TranslationDescriptor(self.__class__, self.field.name, related.get_accessor_name())
+            TranslationDescriptor(related.model, self.name, related.get_accessor_name())
         )
-    """
