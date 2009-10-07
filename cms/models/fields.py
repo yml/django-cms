@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models.loading import get_model
+from django.contrib.contenttypes.models import ContentType
 from cms import settings
 
 class TranslationDescriptor(object):
@@ -89,11 +89,12 @@ class TranslationDescriptor(object):
        if version_id:
             from reversion.models import Version
             version = get_object_or_404(Version, pk=version_id)
-            revs = [related_version.object_version for related_version in version.revision.version_set.all()]
+            content_type = ContentType.objects.get_for_model(self.model)
+            revs = [related_version.object_version 
+                for related_version in version.revision.version_set.filter(content_type=content_type)]
             for rev in revs:
                 obj = rev.object
-                if obj.__class__ == self.model:
-                    self.instance.__dict__[self.translation_cache_name][obj.language] = obj
+                self.instance.__dict__[self.translation_cache_name][obj.language] = obj
 
 class TranslationForeignKey(models.ForeignKey):
 
