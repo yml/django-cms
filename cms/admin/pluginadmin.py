@@ -54,27 +54,30 @@ class PluginAdmin(admin.ModelAdmin):
     # take care with changing fieldsets, get_fieldsets() method removes some
     # fields depending on permissions, but its very static!!
     # don't define fieldsets directly since some fields are not in the form yet
-    add_fieldsets = [
-        (None, {
-            'fields': add_general_fields,
-            'classes': ('general',),
-        }),
-        (_('Hidden'), {
-            'fields': hidden_fields,
-            'classes': ('hidden',),
-        }),
-    ]
-    
-    update_fieldsets = [
-        (None, {
-            'fields': general_fields,
-            'classes': ('general',),
-        }),
-        (_('Hidden'), {
-            'fields': hidden_fields + additional_hidden_fields,
-            'classes': ('hidden',),
-        })
-    ]
+    def __init__(self, model, admin_site):
+        super(PluginAdmin, self).__init__(model, admin_site)
+
+        self.add_fieldsets = [
+            (None, {
+                'fields': self.add_general_fields,
+                'classes': ('general',),
+            }),
+            (_('Hidden'), {
+                'fields': self.hidden_fields,
+                'classes': ('hidden',),
+            }),
+        ]
+        
+        update_fieldsets = [
+            (None, {
+                'fields': self.general_fields,
+                'classes': ('general',),
+            }),
+            (_('Hidden'), {
+                'fields': self.hidden_fields + self.additional_hidden_fields,
+                'classes': ('hidden',),
+            })
+        ]
 
     class Media:
         css = {
@@ -165,18 +168,20 @@ class PluginAdmin(admin.ModelAdmin):
     def get_placeholders(self, request, obj):
         return self.placeholders
 
+    def get_language(self, request, obj):
+        return get_language_from_request(request, obj) # should default to language from language_code? 
+
     def get_form(self, request, obj=None, **kwargs):
         """
-        Get PageForm for the Page model and modify its fields depending on
+        Get form for the model and modify its fields depending on
         the request.
         """
         
-        language = get_language_from_request(request, obj)
-        
-        if obj:
-            form = super(PluginAdmin, self).get_form(request, obj, **kwargs)
-        else:
-            form = super(PluginAdmin, self).get_form(request, obj, **kwargs)
+        language = self.get_language(request, obj)
+
+        form = super(PluginAdmin, self).get_form(request, obj, **kwargs)
+ 
+        if not obj:
             self.inlines = []
    
         for placeholder_name in self.get_placeholders(request, obj):

@@ -27,4 +27,4 @@ class ModelWithPlugins(models.Model):
 
     def delete(self):
         self.cms_plugins.all().delete()
-        super(ModelWithPlugins, self).delete() 
+        super(ModelWithPlugins, self).delete()
