@@ -46,9 +46,9 @@ class PluginAdmin(admin.ModelAdmin):
 
     mandatory_placeholders = ('title', 'slug', 'language') 
     top_fields = []
-    general_fields = ['title', 'slug'] 
-    add_general_fields = ['title', 'slug']
-    hidden_fields = ['language']
+    general_fields = ['title', 'slug', 'language'] 
+    add_general_fields = ['title', 'slug', 'language']
+    hidden_fields = []
     additional_hidden_fields = []
 
     # take care with changing fieldsets, get_fieldsets() method removes some
@@ -68,7 +68,7 @@ class PluginAdmin(admin.ModelAdmin):
             }),
         ]
         
-        update_fieldsets = [
+        self.update_fieldsets = [
             (None, {
                 'fields': self.general_fields,
                 'classes': ('general',),

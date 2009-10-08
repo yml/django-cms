@@ -1,9 +1,11 @@
 from django.contrib import admin
 from django.forms.models import model_to_dict, fields_for_model, save_instance
 from cms.utils import get_language_from_request
+from cms.admin.pluginadmin import PluginAdmin
 
 def get_admin_base():
-    return admin.ModelAdmin
+    return PluginAdmin
+    #return admin.ModelAdmin
 
 admin_base = get_admin_base()
 
