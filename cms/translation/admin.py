@@ -7,6 +7,27 @@ from cms.admin.change_list import get_changelist_admin
 from django.contrib.admin.views.main import ChangeList
 from cms.admin.change_list import get_changelist_admin
 
+class ApplyLanguageChangelist(ChangeList):
+    
+    def apply_to_results(self, results, request):
+        
+        results = list(results)
+        id_list = [r.pk for r in results]
+        pk_index_map = dict([(pk, index) for index, pk in enumerate(id_list)])
+        
+        model = self.model_admin.translation_model
+        translations = model.objects.filter(**{
+            self.model_admin.translation_model_fk + '__in': id_list
+        })
+        
+        for obj in translations:
+            index = pk_index_map[getattr(obj, self.model_admin.translation_model_fk + '_id')]
+            if not hasattr(results[index], 'translations'):
+                results[index].translations = []
+            results[index].translations.append(obj)
+        
+        return results
+        
 def get_translation_admin(admin_base):
     
     class RealTranslationAdmin(admin_base):
@@ -15,6 +36,14 @@ def get_translation_admin(admin_base):
         translation_model_fk = ''
         translation_model_language = 'language'    
     
+        changelist_class = ApplyLanguageChangelist
+
+        list_display = ('languages',)
+    
+        def languages(self, obj):
+          return ' '.join([t.language for t in obj.translations])
+        languages.short_description = 'Languages'
+
         def get_translation(self, request, obj):
     
             language = get_language_from_request(request)

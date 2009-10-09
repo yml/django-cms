@@ -85,3 +85,23 @@ def render_plugin(context, plugin):
     return {'content': plugin.render_plugin(context, admin=True)}
 
 render_plugin = register.inclusion_tag('cms/content.html', takes_context=True)(render_plugin)
+
+from django.contrib.admin.templatetags.admin_list import items_for_result, result_headers
+
+def results(cl, request):
+    if hasattr(cl, 'apply_to_results'):
+        apply_to_results = cl.apply_to_results
+    else:
+        apply_to_results = lambda x, y: x
+    if cl.formset:
+        for res, form in zip(apply_to_results(cl.result_list, request), cl.formset.forms):
+            yield list(items_for_result(cl, res, form))
+    else:
+        for res in apply_to_results(cl.result_list, request):
+            yield list(items_for_result(cl, res, None))
+
+def cms_result_list(cl, request):
+    return {'cl': cl,
+            'result_headers': list(result_headers(cl)),
+            'results': list(results(cl, request))}
+cms_result_list = register.inclusion_tag("admin/change_list_results.html")(cms_result_list)

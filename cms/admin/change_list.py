@@ -216,8 +216,8 @@ class CMSChangeList(ChangeList):
         self.has_access_to_multiple_sites = len(self.sites) > 1
     
     def current_site(self):
-        return self._current_site
-        
+        return self._current_site        
+
 def get_changelist_admin(admin_base):
     
     class RealReplaceChangeListAdmin(admin_base):
