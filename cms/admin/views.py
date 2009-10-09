@@ -59,8 +59,8 @@ def add_plugin(request):
         object_id = request.POST.get('object_id', None)
         parent = None
         ctype = ContentType.objects.get(app_label=app, model=model)
-        content_object = ctype.get_object_for_this_type(pk=object_id)
         if object_id:
+            content_object = ctype.get_object_for_this_type(pk=object_id)
             placeholder = request.POST['placeholder'].lower()
             language = request.POST['language']
             position = CMSPlugin.objects.filter(content_type=ctype, object_id=object_id, language=language, placeholder=placeholder).count()

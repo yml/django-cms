@@ -4,6 +4,8 @@ from django.forms.models import model_to_dict, fields_for_model, save_instance
 from cms.utils import get_language_from_request
 from cms.admin.pluginadmin import PluginAdmin
 from cms.admin.change_list import get_changelist_admin
+from django.contrib.admin.views.main import ChangeList
+from cms.admin.change_list import get_changelist_admin
 
 def get_translation_admin(admin_base):
     
@@ -66,13 +68,13 @@ def get_translation_admin(admin_base):
 
 TranslationAdmin = get_translation_admin(get_changelist_admin(admin.ModelAdmin))
 
-PluginTranslationAdmin = get_translation_admin(PluginAdmin)
+PluginTranslationAdmin = get_translation_admin(get_changelist_admin(PluginAdmin))
 
 if 'reversion' in settings.INSTALLED_APPS:
     
     from reversion.admin import VersionAdmin    
     from cms.admin.pluginadmin import VersionPluginAdmin
     
-    VersionTranslationAdmin = get_translation_admin(get_changelist_admin(VersionAdmin)) 
-    VersionPluginTranslationAdmin = get_translation_admin(VersionPluginAdmin) 
+    VersionTranslationAdmin = get_translation_admin(get_changelist_admin(VersionAdmin))
+    VersionPluginTranslationAdmin = get_translation_admin(get_changelist_admin(VersionPluginAdmin)) 
 

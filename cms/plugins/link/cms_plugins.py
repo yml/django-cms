@@ -4,7 +4,7 @@ from cms.settings import CMS_MEDIA_URL
 from cms.plugin_pool import plugin_pool
 from cms.plugin_base import CMSPluginBase
 from cms.plugins.link.forms import LinkForm
-
+from django.contrib.sites.models import Site
 
 class LinkPlugin(CMSPluginBase):
     model = Link
@@ -52,7 +52,7 @@ class LinkPlugin(CMSPluginBase):
                 form.for_site(self.site)
                 return form
             
-        return FakeForm(Form, self.cms_plugin_instance.page.site) 
+        return FakeForm(Form, getattr(self.cms_plugin_instance.content_object, 'site', Site.objects.get_current())) 
         
     def icon_src(self, instance):
         return CMS_MEDIA_URL + u"images/plugins/link.png"

@@ -1,5 +1,5 @@
 from cms import settings
-from cms.admin.change_list import CMSChangeList
+from cms.admin.change_list import CMSChangeList, get_changelist_admin
 from cms.admin.dialog.views import get_copy_dialog
 from cms.admin.forms import PageAddForm
 from cms.admin.permissionadmin import PAGE_ADMIN_INLINES, \
@@ -41,7 +41,6 @@ from django.utils.functional import curry
 from django.utils.translation import ugettext as _
 from os.path import join
 from django.contrib.contenttypes.models import ContentType
-from cms.admin.change_list import get_changelist_admin
 
 def get_plugin_admin(admin_base):
     
@@ -128,7 +127,7 @@ def get_plugin_admin(admin_base):
     
         def get_urls(self):
             """New way of urls handling.
-    """
+            """
             from django.conf.urls.defaults import patterns, url
             info = "%sadmin_%s_%s" % (self.admin_site.name, self.model._meta.app_label, self.model._meta.module_name)
      

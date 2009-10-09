@@ -8,10 +8,12 @@ function escapeHtml(html) {
 }
 
 
-function add_plugin(type, parent_id, language){
+function add_plugin(type, parent_id, app, model, language){
 	$.post("add-plugin/", {
 		parent_id: parent_id,
-		plugin_type: type
+		plugin_type: type,
+		app: app,
+		model: model
 	}, function(data) {
 		if ('error' != data) {
 			// Successfully created, data is pk of object, but object

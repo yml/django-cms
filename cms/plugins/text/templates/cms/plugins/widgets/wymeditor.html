@@ -62,6 +62,8 @@ $(document).ready(function(){
 			var select = $(this).parent().children("select");
 			var pluginvalue = select.attr('value');
 			var splits = window.location.href.split("?")[0].split("/");
+			var app = splits[splits.length - 6]
+			var model = splits[splits.length - 5]
 			var parent_id = Number(splits[splits.length - 2]);
 			var language = $('#id_language').attr('value');
 			
@@ -76,7 +78,7 @@ $(document).ready(function(){
 				return;
 			}
 			// First create db instance using AJAX post back
-			add_plugin(pluginvalue, parent_id, language)
+			add_plugin(pluginvalue, parent_id, app, model, language)
 			
 		}).css("cursor", "pointer").css("margin", "5px");
 		
