@@ -2,8 +2,6 @@ from cms import settings
 from django.contrib import admin
 from django.forms.models import model_to_dict, fields_for_model, save_instance
 from cms.utils import get_language_from_request
-from cms.admin.pluginadmin import PluginAdmin
-from cms.admin.change_list import get_changelist_admin
 from django.contrib.admin.views.main import ChangeList
 from cms.admin.change_list import get_changelist_admin
 
@@ -59,7 +57,7 @@ class BlogEntryAdmin(PluginTranslationAdmin):
     placeholders = ['main']
 
 admin.site.register(BlogEntry, BlogEntryAdmin)
-""""
+"""
 
 def get_translation_admin(admin_base):
     
@@ -128,16 +126,18 @@ def get_translation_admin(admin_base):
             
     return RealTranslationAdmin
 
+from cms.admin.change_list import ReplaceChangeListAdmin
+from cms.admin.pluginadmin import PluginAdmin
 
-TranslationAdmin = get_translation_admin(get_changelist_admin(admin.ModelAdmin))
+TranslationAdmin = get_translation_admin(ReplaceChangeListAdmin)
 
-PluginTranslationAdmin = get_translation_admin(get_changelist_admin(PluginAdmin))
+TranslationPluginAdmin = get_translation_admin(PluginAdmin)
 
 if 'reversion' in settings.INSTALLED_APPS:
     
-    from reversion.admin import VersionAdmin    
-    from cms.admin.pluginadmin import VersionPluginAdmin
+    from cms.admin.versionadmin import VersionAdmin    
+    from cms.admin.pluginadmin import PluginVersionAdmin
     
-    VersionTranslationAdmin = get_translation_admin(get_changelist_admin(VersionAdmin))
-    VersionPluginTranslationAdmin = get_translation_admin(get_changelist_admin(VersionPluginAdmin)) 
-
+    TranslationVersionAdmin = get_translation_admin(VersionAdmin)
+    
+    TranslationPluginVersionAdmin = get_translation_admin(PluginVersionAdmin) 

@@ -337,3 +337,5 @@ def get_changelist_admin(admin_base):
             ], context, context_instance=context_instance)
             
     return RealReplaceChangeListAdmin
+    
+ReplaceChangeListAdmin = get_changelist_admin(admin.ModelAdmin)

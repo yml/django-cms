@@ -211,7 +211,7 @@ class Page(MpttPublisher):
                 if plugin:
                     plugin.pk = p.pk
                     plugin.id = p.pk
-                    plugin.page = page
+                    plugin.content_object = page
                     plugin.tree_id = p.tree_id
                     plugin.lft = p.lft
                     plugin.rght = p.rght

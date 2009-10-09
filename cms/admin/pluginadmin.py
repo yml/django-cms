@@ -243,10 +243,12 @@ def get_plugin_admin(admin_base):
         
     return RealPluginAdmin
 
-PluginAdmin = get_plugin_admin(get_changelist_admin(admin.ModelAdmin))
+from cms.admin.change_list import ReplaceChangeListAdmin
+
+PluginAdmin = get_plugin_admin(ReplaceChangeListAdmin)
 
 if 'reversion' in settings.INSTALLED_APPS:
     
-    from reversion.admin import VersionAdmin
+    from cms.admin.versionadmin import VersionAdmin
     
-    VersionPluginAdmin = get_plugin_admin(get_changelist_admin(VersionAdmin)) 
+    VersionPluginAdmin = get_plugin_admin(VersionAdmin) 
