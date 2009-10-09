@@ -27,7 +27,40 @@ class ApplyLanguageChangelist(ChangeList):
             results[index].translations.append(obj)
         
         return results
-        
+
+"""
+Example usage:
+
+models.py
+
+from django.db import models
+from cms.models.modelwithplugins import ModelWithPlugins
+from cms import settings
+
+class BlogEntry(ModelWithPlugins):
+    published = models.BooleanField()
+
+class Title(models.Model): 
+    entry = models.ForeignKey(BlogEntry)
+    language = models.CharField(max_length=2, choices=settings.LANGUAGES)
+    title = models.CharField(max_length=255)
+    slug = models.SlugField()
+
+admin.py
+
+from django.contrib import admin
+from cms.translation.admin import PluginTranslationAdmin
+from models import BlogEntry, Title
+
+class BlogEntryAdmin(PluginTranslationAdmin):
+
+    translation_model = Title
+    translation_model_fk = 'entry'
+    placeholders = ['main']
+
+admin.site.register(BlogEntry, BlogEntryAdmin)
+""""
+
 def get_translation_admin(admin_base):
     
     class RealTranslationAdmin(admin_base):
@@ -41,8 +74,9 @@ def get_translation_admin(admin_base):
         list_display = ('languages',)
     
         def languages(self, obj):
-          return ' '.join([t.language for t in obj.translations])
+          return ' '.join(['<a href="%s/?language=%s">%s</a>' % (obj.pk, t.language, t.language.upper()) for t in obj.translations])
         languages.short_description = 'Languages'
+        languages.allow_tags = True
 
         def get_translation(self, request, obj):
     
