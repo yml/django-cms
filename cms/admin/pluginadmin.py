@@ -41,6 +41,7 @@ from django.utils.functional import curry
 from django.utils.translation import ugettext as _
 from os.path import join
 from django.contrib.contenttypes.models import ContentType
+from cms.admin.change_list import get_changelist_admin
 
 def get_plugin_admin(admin_base):
     
@@ -243,10 +244,10 @@ def get_plugin_admin(admin_base):
         
     return RealPluginAdmin
 
-PluginAdmin = get_plugin_admin(admin.ModelAdmin)
+PluginAdmin = get_plugin_admin(get_changelist_admin(admin.ModelAdmin))
 
 if 'reversion' in settings.INSTALLED_APPS:
     
     from reversion.admin import VersionAdmin
     
-    VersionPluginAdmin = get_plugin_admin(VersionAdmin) 
+    VersionPluginAdmin = get_plugin_admin(get_changelist_admin(VersionAdmin)) 
