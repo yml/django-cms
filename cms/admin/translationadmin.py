@@ -69,6 +69,8 @@ def get_translation_admin(admin_base):
     
         changelist_class = ApplyLanguageChangelist
 
+        change_list_template = 'admin/apply_change_list.html'
+
         list_display = ('languages',)
     
         def languages(self, obj):
