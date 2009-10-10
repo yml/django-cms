@@ -109,6 +109,7 @@ def mptt_items_for_result(cl, result, form):
     pk = cl.lookup_opts.pk.attname
     for field_name in cl.list_display:
         row_class = ''
+        real_field_name = (field_name == '__str__' or field_name == '__unicode__') and 'description' or (callable(field_name) and field_name.__name__) or field_name
         try:
             f = cl.lookup_opts.get_field(field_name)
         except models.FieldDoesNotExist:
@@ -195,8 +196,9 @@ def mptt_items_for_result(cl, result, form):
                 attr = pk
             value = result.serializable_value(attr)
             result_id = repr(force_unicode(value))[1:]
+            row_class = row_class and row_class[:-1] + 'col-' + force_unicode(real_field_name) + '"' or ' class="col-%s"' % force_unicode(real_field_name)
             yield mark_safe(u'<%s%s><a href="%s"%s>%s</a></%s>' % \
-                (table_tag, row_class, url, (cl.is_popup and ' onclick="opener.dismissRelatedLookupPopup(window, %s); return false;"' % result_id or ''), conditional_escape(result_repr), table_tag))
+                (table_tag,  row_class, url, (cl.is_popup and ' onclick="opener.dismissRelatedLookupPopup(window, %s); return false;"' % result_id or ''), conditional_escape(result_repr), table_tag))
         else:
             # By default the fields come from ModelAdmin.list_editable, but if we pull
             # the fields out of the form instead of list_editable custom admins
