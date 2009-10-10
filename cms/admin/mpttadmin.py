@@ -1,5 +1,5 @@
 from cms import settings
-from cms.translation.admin import ApplyLanguageChangelist
+from cms.admin.translationadmin import ApplyLanguageChangelist
 from mptt.utils import tree_item_iterator
 
 class ApplyLanguageMpttChangelist(ApplyLanguageChangelist):
@@ -47,7 +47,7 @@ if 'reversion' in settings.INSTALLED_APPS:
     
     from cms.admin.versionadmin import VersionAdmin    
     from cms.admin.pluginadmin import PluginVersionAdmin
-    from cms.translationadmin import TranslationVersionAdmin, TranslationPluginVersionAdmin
+    from cms.admin.translationadmin import TranslationVersionAdmin, TranslationPluginVersionAdmin
 
     MpttVersionAdmin = get_mptt_admin(VersionAdmin)
     

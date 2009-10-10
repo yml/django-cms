@@ -251,4 +251,4 @@ if 'reversion' in settings.INSTALLED_APPS:
     
     from cms.admin.versionadmin import VersionAdmin
     
-    VersionPluginAdmin = get_plugin_admin(VersionAdmin) 
+    PluginVersionAdmin = get_plugin_admin(VersionAdmin) 
