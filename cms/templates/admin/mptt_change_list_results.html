@@ -11,7 +11,9 @@
 
 <div class="changelist_tree">
 {% for obj, result in results %}
+{% if obj.structure.new_level %}<ul><li>{% else %}</li><li>{% endif %}
 <div class="{% cycle 'row1' 'row2' %}">{% for item in result %}{{ item }}{% endfor %}</div>
+{% for level in obj.structure.closed_levels %}</li></ul>{% endfor %}
 {% endfor %}
 </div>
 
