@@ -222,7 +222,7 @@ def results(cl, request):
         for res in apply_to_results(cl.result_list, request):
             yield list(items_for_result(cl, res, None))
 
-def result_list(cl, request):
+def apply_result_list(cl, request):
     return {'cl': cl,
             'result_headers': list(result_headers(cl)),
             'results': list(results(cl, request))}
@@ -244,6 +244,6 @@ def mptt_result_list(cl, request):
             'result_headers': list(result_headers(cl)),
             'results': list(mptt_results(cl, request))}
 
-apply_result_list = register.inclusion_tag("admin/change_list_results.html")(result_list)
+apply_result_list = register.inclusion_tag("admin/change_list_results.html")(apply_result_list)
 
 mptt_result_list = register.inclusion_tag("admin/mptt_change_list_results.html")(mptt_result_list)
