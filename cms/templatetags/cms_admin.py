@@ -102,9 +102,72 @@ def render_plugin(context, plugin):
 
 render_plugin = register.inclusion_tag('cms/content.html', takes_context=True)(render_plugin)
 
-from django.contrib.admin.templatetags.admin_list import result_headers, items_for_result
 
-def mptt_items_for_result(cl, result, form):
+def result_headers(cl):
+    lookup_opts = cl.lookup_opts
+
+    for i, field_name in enumerate(cl.list_display):
+        attr = None
+        try:
+            f = lookup_opts.get_field(field_name)
+            admin_order_field = None
+        except models.FieldDoesNotExist:
+            # For non-field list_display values, check for the function
+            # attribute "short_description". If that doesn't exist, fall back
+            # to the method name. And __str__ and __unicode__ are special-cases.
+            if field_name == '__unicode__':
+                header = force_unicode(lookup_opts.verbose_name)
+            elif field_name == '__str__':
+                header = smart_str(lookup_opts.verbose_name)
+            else:
+                if callable(field_name):
+                    attr = field_name # field_name can be a callable
+                else:
+                    try:
+                        attr = getattr(cl.model_admin, field_name)
+                    except AttributeError:
+                        try:
+                            attr = getattr(cl, field_name)
+                        except AttributeError:
+                            try:
+                                attr = getattr(cl.model, field_name)
+                            except AttributeError:
+                                raise AttributeError, \
+                                    "'%s' model or '%s' objects have no attribute '%s'" % \
+                                        (lookup_opts.object_name, cl.model_admin.__class__, field_name)
+
+                try:
+                    header = attr.short_description
+                except AttributeError:
+                    if callable(field_name):
+                        header = field_name.__name__
+                    else:
+                        header = field_name
+                    header = header.replace('_', ' ')
+
+            # It is a non-field, but perhaps one that is sortable
+            admin_order_field = getattr(attr, "admin_order_field", None)
+            if not admin_order_field:
+                yield {"text": header}
+                continue
+
+            # So this _is_ a sortable non-field.  Go to the yield
+            # after the else clause.
+        else:
+            header = f.verbose_name
+
+        th_classes = []
+        new_order_type = 'asc'
+        if field_name == cl.order_field or admin_order_field == cl.order_field:
+            th_classes.append('sorted %sending' % cl.order_type.lower())
+            new_order_type = {'asc': 'desc', 'desc': 'asc'}[cl.order_type.lower()]
+
+        yield {"text": header,
+               "sortable": True,
+               "url": cl.get_query_string({ORDER_VAR: i, ORDER_TYPE_VAR: new_order_type}),
+               "class_attrib": mark_safe(th_classes and ' class="%s"' % ' '.join(th_classes) or '')}
+               
+def items_with_class_for_result(cl, result, form, use_div=False):
     first = True
     pk = cl.lookup_opts.pk.attname
     for field_name in cl.list_display:
@@ -122,6 +185,10 @@ def mptt_items_for_result(cl, result, form):
                 elif hasattr(cl.model_admin, field_name) and \
                    not field_name == '__str__' and not field_name == '__unicode__':
                     attr = getattr(cl.model_admin, field_name)
+                    value = attr(result)
+                elif hasattr(cl, field_name) and \
+                   not field_name == '__str__' and not field_name == '__unicode__':
+                    attr = getattr(cl, field_name)
                     value = attr(result)
                 else:
                     attr = getattr(result, field_name)
@@ -183,9 +250,10 @@ def mptt_items_for_result(cl, result, form):
                 result_repr = escape(field_val)
         if force_unicode(result_repr) == '':
             result_repr = mark_safe('&nbsp;')
+        row_class = row_class and row_class[:-1] + 'col-' + force_unicode(real_field_name) + '"' or ' class="col-%s"' % force_unicode(real_field_name)
         # If list_display_links not defined, add the link tag to the first field
         if (first and not cl.list_display_links) or field_name in cl.list_display_links:
-            table_tag = {True:'div', False:'div'}[first]
+            table_tag = use_div and 'div' or {True:'th', False:'td'}[first]
             first = False
             url = cl.url_for_result(result)
             # Convert the pk to something that can be used in Javascript.
@@ -196,7 +264,6 @@ def mptt_items_for_result(cl, result, form):
                 attr = pk
             value = result.serializable_value(attr)
             result_id = repr(force_unicode(value))[1:]
-            row_class = row_class and row_class[:-1] + 'col-' + force_unicode(real_field_name) + '"' or ' class="col-%s"' % force_unicode(real_field_name)
             yield mark_safe(u'<%s%s><a href="%s"%s>%s</a></%s>' % \
                 (table_tag,  row_class, url, (cl.is_popup and ' onclick="opener.dismissRelatedLookupPopup(window, %s); return false;"' % result_id or ''), conditional_escape(result_repr), table_tag))
         else:
@@ -208,7 +275,7 @@ def mptt_items_for_result(cl, result, form):
                 result_repr = mark_safe(force_unicode(bf.errors) + force_unicode(bf))
             else:
                 result_repr = conditional_escape(result_repr)
-            yield mark_safe(u'<div%s>%s</div>' % (row_class, result_repr))
+            yield mark_safe(u'<%s%s>%s</%s>' % (use_div and 'div' or 'td', row_class, result_repr, use_div and 'div' or 'td',))
     if form:
         yield mark_safe(force_unicode(form[cl.model._meta.pk.name]))
         
@@ -219,10 +286,10 @@ def results(cl, request):
         apply_to_results = lambda x, y: x
     if cl.formset:
         for res, form in zip(apply_to_results(cl.result_list, request), cl.formset.forms):
-            yield list(items_for_result(cl, res, form))
+            yield list(items_with_class_for_result(cl, res, form))
     else:
         for res in apply_to_results(cl.result_list, request):
-            yield list(items_for_result(cl, res, None))
+            yield list(items_with_class_for_result(cl, res, None))
 
 def apply_result_list(cl, request):
     return {'cl': cl,
@@ -236,10 +303,10 @@ def mptt_results(cl, request):
         apply_to_results = lambda x, y: x
     if cl.formset:
         for res, form in zip(apply_to_results(cl.result_list, request), cl.formset.forms):
-            yield (res, list(mptt_items_for_result(cl, res, form)))
+            yield (res, list(items_with_class_for_result(cl, res, form, use_div=True)))
     else:
         for res in apply_to_results(cl.result_list, request):
-            yield (res, list(mptt_items_for_result(cl, res, None)))
+            yield (res, list(items_with_class_for_result(cl, res, None, use_div=True)))
 
 def mptt_result_list(cl, request):
     return {'cl': cl,

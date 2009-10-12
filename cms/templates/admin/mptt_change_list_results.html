@@ -1,21 +1,42 @@
 {% if results %}
 
-<div class="changelist_headers">
-
-{% for header in result_headers %}<div{{ header.class_attrib }}>
+<div id="sitemap" style="">
+<ul class="header">
+    <li>
+        <div class="cont">
+            <div class="col1">
+                <div{{ result_headers.0.class_attrib }}>
+{% if result_headers.0.sortable %}<a href="{{ result_headers.0.url }}">{% endif %}
+{{ result_headers.0.text|capfirst }}
+{% if result_headers.0.sortable %}</a>{% endif %}</div>
+            </div>
+            <div class="col2">
+{% for header in result_headers|slice:"1:" %}<div{{ header.class_attrib }}>
 {% if header.sortable %}<a href="{{ header.url }}">{% endif %}
 {{ header.text|capfirst }}
-{% if header.sortable %}</a>{% endif %}</div{% endfor %}
+{% if header.sortable %}</a>{% endif %}</div>{% endfor %}
+            </div>
+        <div>
+    </li>
+</ul>
 
-</div>
-
-<div class="changelist_tree">
+<div id="jstree_0" class="tree root_allow_children">
 {% for obj, result in results %}
-{% if obj.structure.new_level %}<ul><li>{% else %}</li><li>{% endif %}
-<div class="{% cycle 'row1' 'row2' %}">{% for item in result %}{{ item }}{% endfor %}</div>
-{% for level in obj.structure.closed_levels %}</li></ul>{% endfor %}
+    {% if obj.structure.new_level %}
+        <ul class="{% if forloop.first %}tree-default{% endif %}{% if forloop.last %}last{% endif %}">
+            <li class="moveable{% if forloop.last %} last{% endif %}">
+    {% else %}
+            </li>
+            <li class="moveable {% if forloop.last %} last{% endif %}">
+    {% endif %}
+    <div class="cont">
+        <div class="col1">{{ result.0 }}</div>
+        <div class="col2">{% for item in result|slice:"1:" %}{{ item }}{% endfor %}</div>
+    </div>
+    {% for level in obj.structure.closed_levels %}</li></ul>{% endfor %}
 {% endfor %}
 </div>
 
 {% endif %}
+</div>
 
