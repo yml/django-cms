@@ -30,17 +30,15 @@ def get_mptt_admin(admin_base):
                 
             )]
             
-        def add_extra_to_results(self, results, request):
+        def refine_results(self, results, forms, extras, request):
             
-            if hasattr(super(RealMpttAdmin, self), 'add_extra_to_results'):
-                extras = super(RealMpttAdmin, self).add_extra_to_results(results, request)
-            else:
-                extras = [{} for r in results]
+            if hasattr(super(RealMpttAdmin, self), 'refine_results'):
+                results, forms, extras = super(RealMpttAdmin, self).refine_results(results, forms, extras, request)
             
             for index, result_structure in enumerate(tree_item_iterator(results)):
                 extras[index]['structure'] = result_structure[1]
             
-            return extras
+            return (results, forms, extras)
         
         def edit_links(self, obj, extra):
             return u"""

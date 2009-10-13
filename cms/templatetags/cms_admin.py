@@ -286,15 +286,18 @@ def items_with_class_for_result(cl, result, form, extra, use_div=False):
         yield mark_safe(force_unicode(form[cl.model._meta.pk.name]))
         
 def results(cl, request):
-    if hasattr(cl, 'model_admin') and hasattr(cl.model_admin, 'add_extra_to_results'):
-        add_extra_to_results = cl.model_admin.add_extra_to_results
-    else:
-        add_extra_to_results = lambda x, y: [None for o in x]
-    if cl.formset:
-        for res, form, extra in zip(cl.result_list, cl.formset.forms, add_extra_to_results(cl.result_list, request)):
+    extras = [{} for r in cl.result_list]
+    if hasattr(cl, 'model_admin'):
+        if hasattr(cl.model_admin, 'refine_results'):
+            refine_results = cl.model_admin.refine_results
+            result_list, forms, extras = refine_results(cl.result_list, cl.formset and cl.formset.forms or None, extras, request)
+        else:
+            result_list, forms, extras = cl.result_list, cl.formset and cl.formset.forms or None, extras
+    if forms:
+        for res, form, extra in zip(result_list, forms, extras):
             yield (extra, list(items_with_class_for_result(cl, res, form, extra)))
     else:
-        for res, extra in zip(cl.result_list, add_extra_to_results(cl.result_list, request)):
+        for res, extra in zip(cl.result_list, extras):
             yield (extra, list(items_with_class_for_result(cl, res, None, extra)))
 
 def apply_result_list(cl, request):
@@ -303,17 +306,20 @@ def apply_result_list(cl, request):
             'results': list(results(cl, request))}
             
 def mptt_results(cl, request):
-    if hasattr(cl, 'model_admin') and hasattr(cl.model_admin, 'add_extra_to_results'):
-        add_extra_to_results = cl.model_admin.add_extra_to_results
-    else:
-        add_extra_to_results = lambda x, y: [None for o in x]
-    if cl.formset:
-        for res, form, extra in zip(cl.result_list, cl.formset.forms, add_extra_to_results(cl.result_list, request)):
+    extras = [{} for r in cl.result_list]
+    if hasattr(cl, 'model_admin'):
+        if hasattr(cl.model_admin, 'refine_results'):
+            refine_results = cl.model_admin.refine_results
+            result_list, forms, extras = refine_results(cl.result_list, cl.formset and cl.formset.forms or None, extras, request)
+        else:
+            result_list, forms, extras = cl.result_list, cl.formset and cl.formset.forms or None, extras
+    if forms:
+        for res, form, extra in zip(result_list, forms, extras):
             yield (extra, list(items_with_class_for_result(cl, res, form, extra, use_div=True)))
     else:
-        for res, extra in zip(cl.result_list, add_extra_to_results(cl.result_list, request)):
+        for res, extra in zip(cl.result_list, extras):
             yield (extra, list(items_with_class_for_result(cl, res, None, extra, use_div=True)))
-
+            
 def mptt_result_list(cl, request):
     return {'cl': cl,
             'result_headers': list(result_headers(cl)),
