@@ -108,6 +108,7 @@ def result_headers(cl):
 
     for i, field_name in enumerate(cl.list_display):
         attr = None
+        th_classes = []
         try:
             f = lookup_opts.get_field(field_name)
             admin_order_field = None
@@ -144,11 +145,16 @@ def result_headers(cl):
                     else:
                         header = field_name
                     header = header.replace('_', ' ')
-
+                    
+            real_field_name = (field_name == '__str__' or field_name == '__unicode__') and 'description' or (callable(field_name) and field_name.__name__) or field_name
+      
+            th_classes.append('col-%s' % real_field_name)
+            
             # It is a non-field, but perhaps one that is sortable
             admin_order_field = getattr(attr, "admin_order_field", None)
             if not admin_order_field:
-                yield {"text": header}
+                yield {"text": header,
+                        "class_attrib": mark_safe(th_classes and ' class="%s"' % ' '.join(th_classes) or '')}
                 continue
 
             # So this _is_ a sortable non-field.  Go to the yield
@@ -156,13 +162,9 @@ def result_headers(cl):
         else:
             header = f.verbose_name
 
-        th_classes = []
         new_order_type = 'asc'
                     
-        real_field_name = (field_name == '__str__' or field_name == '__unicode__') and 'description' or (callable(field_name) and field_name.__name__) or field_name
-  
-        th_classes.append('col-%s' % real_field_name)
-        
+
         if field_name == cl.order_field or admin_order_field == cl.order_field:
             th_classes.append('sorted %sending' % cl.order_type.lower())
             new_order_type = {'asc': 'desc', 'desc': 'asc'}[cl.order_type.lower()]
