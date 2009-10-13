@@ -149,7 +149,9 @@ def get_translation_admin(admin_base):
                 if getattr(obj, self.translation_model_language) == language:
                     field_dict.update(model_to_dict(obj))
                     break
-            return field_dict    return RealTranslationAdmin
+            return field_dict
+        
+    return RealTranslationAdmin
 
 from cms.admin.pluginadmin import PluginAdmin
 
