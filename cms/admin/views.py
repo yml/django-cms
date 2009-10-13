@@ -161,8 +161,8 @@ def edit_plugin(request, plugin_id, admin_site):
         # if reversion is installed, save version of the page plugins
         if 'reversion' in settings.INSTALLED_APPS:
             # perform this only if object was successfully changed
-            cms_plugin.page.save()
-            save_all_plugins(request, cms_plugin.page, [cms_plugin.pk])
+            cms_plugin.content_object.save()
+            save_all_plugins(request, cms_plugin.content_object, [cms_plugin.pk])
             revision.user = request.user
             plugin_name = unicode(plugin_pool.get_plugin(cms_plugin.plugin_type).name)
             revision.comment = _(u"%(plugin_name)s plugin edited at position %(position)s in %(placeholder)s") % {'plugin_name':plugin_name, 'position':cms_plugin.position, 'placeholder': cms_plugin.placeholder}
