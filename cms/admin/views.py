@@ -268,7 +268,9 @@ def revert_plugins(request, version_id, obj):
     plugin_list = []
     titles = []
     others = []
-    page = obj
+    content_object = obj
+    ctype = ContentType.objects.get_for_model(content_object.__class__)
+    object_id = content_object.pk    
     for rev in revs:
         obj = rev.object
         
@@ -283,11 +285,11 @@ def revert_plugins(request, version_id, obj):
             titles.append(obj)
         else:
             others.append(rev)
-    if not page.has_change_permission(request):
+    if hasattr(content_object, 'has_change_permission') and not page.has_change_permission(request):
         raise Http404
-    current_plugins = list(CMSPlugin.objects.filter(page=page))
+    current_plugins = list(CMSPlugin.objects.filter(content_type=ctype, object_id=object_id))
     for plugin in cms_plugin_list:
-        plugin.page = page
+        plugin.content_object = content_object
         
         plugin.save(no_signals=True)
         plugin.save()
@@ -298,12 +300,12 @@ def revert_plugins(request, version_id, obj):
         for old in current_plugins:
             if old.pk == plugin.pk:
                 current_plugins.remove(old)
-    for title in titles:
-        title.page = page
+    for title in titles: # what does this have to do with reverting plugins?
+        title.page = content_object
         try:
             title.save()
         except:
-            title.pk = Title.objects.get(page=page, language=title.language).pk
+            title.pk = Title.objects.get(page=content_object, language=title.language).pk
             title.save()
     for other in others:
         other.object.save()
