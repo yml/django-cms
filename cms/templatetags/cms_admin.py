@@ -147,8 +147,9 @@ def result_headers(cl):
                     header = header.replace('_', ' ')
                     
             real_field_name = (field_name == '__str__' or field_name == '__unicode__') and 'description' or (callable(field_name) and field_name.__name__) or field_name
-      
-            th_classes.append('col-%s' % real_field_name)
+            real_field_name = real_field_name.replace('_', '-')
+
+            th_classes.append('%s' % real_field_name)
             
             # It is a non-field, but perhaps one that is sortable
             admin_order_field = getattr(attr, "admin_order_field", None)
@@ -254,7 +255,8 @@ def items_with_class_for_result(cl, result, form, extra, use_div=False):
                 result_repr = escape(field_val)
         if force_unicode(result_repr) == '':
             result_repr = mark_safe('&nbsp;')
-        row_class = row_class and row_class[:-1] + 'col-' + force_unicode(real_field_name) + '"' or ' class="col-%s"' % force_unicode(real_field_name)
+        real_field_name = real_field_name.replace('_', '-')
+        row_class = row_class and row_class[:-1] + '' + force_unicode(real_field_name) + '"' or ' class="%s"' % force_unicode(real_field_name)
         # If list_display_links not defined, add the link tag to the first field
         if (first and not cl.list_display_links) or field_name in cl.list_display_links:
             table_tag = use_div and 'div' or {True:'th', False:'td'}[first]

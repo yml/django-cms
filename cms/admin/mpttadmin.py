@@ -11,7 +11,7 @@ def get_mptt_admin(admin_base):
         
         actions = None
         change_list_template = 'admin/mptt_change_list.html'
-        list_display = ('edit_links', 'target_container')
+        list_display = ('edit_links', 'col_actions')
             
         class Media:
             css = {
@@ -51,7 +51,7 @@ def get_mptt_admin(admin_base):
         edit_links.allow_tags = True
         edit_links.takes_extra = True
         
-        def target_container(self, obj, extra):
+        def col_actions(self, obj, extra):
             return u"""
             <span id="move-target-%i" class="move-target-container">
                 <a href="#" class="move-target left" title="insert above">
@@ -65,8 +65,8 @@ def get_mptt_admin(admin_base):
             </span>
             """ % (obj.pk, join(django_settings.ADMIN_MEDIA_PREFIX, 'img/admin/arrow-up.gif'), join(django_settings.ADMIN_MEDIA_PREFIX, 'img/admin/arrow-down.gif'))
             
-        target_container.allow_tags = True      
-        target_container.takes_extra = True
+        col_actions.allow_tags = True      
+        col_actions.takes_extra = True
         
     return RealMpttAdmin
         

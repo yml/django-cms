@@ -5,18 +5,23 @@
     <li>
         <div class="cont">
             <div class="col1">
+                
                 <div{{ result_headers.0.class_attrib }}>
-{% if result_headers.0.sortable %}<a href="{{ result_headers.0.url }}">{% endif %}
-{{ result_headers.0.text|capfirst }}
-{% if result_headers.0.sortable %}</a>{% endif %}</div>
+                    {% if result_headers.0.sortable %}<a href="{{ result_headers.0.url }}">{% endif %}
+                    {{ result_headers.0.text|capfirst }}
+                    {% if result_headers.0.sortable %}</a>{% endif %}
+                </div>
+                
             </div>
             <div class="col2">
-{% for header in result_headers|slice:"1:" %}<div{{ header.class_attrib }}>
-{% if header.sortable %}<a href="{{ header.url }}">{% endif %}
-{{ header.text|capfirst }}
-{% if header.sortable %}</a>{% endif %}</div>{% endfor %}
+                
+                {% for header in result_headers|slice:"1:" %}<div{{ header.class_attrib }}>
+                {% if header.sortable %}<a href="{{ header.url }}">{% endif %}
+                {{ header.text|capfirst }}
+                {% if header.sortable %}</a>{% endif %}</div>{% endfor %}
+                
             </div>
-        <div>
+        </div>
     </li>
 </ul>
 

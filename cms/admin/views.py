@@ -242,11 +242,15 @@ def remove_plugin(request):
 if 'reversion' in settings.INSTALLED_APPS:
     remove_plugin = revision.create_on_success(remove_plugin)
     
-def save_all_plugins(request, page, excludes=None):
-    if not page.has_change_permission(request):
+def save_all_plugins(request, content_object, excludes=None):
+    
+    if hasattr(content_object, 'has_change_permission') and not page.has_change_permission(request):
         raise Http404
     
-    for plugin in CMSPlugin.objects.filter(page=page):
+    ctype = ContentType.objects.get_for_model(content_object.__class__)
+    object_id = content_object.pk
+    
+    for plugin in CMSPlugin.objects.filter(content_type=ctype, object_id=object_id):
         if excludes:
             if plugin.pk in excludes:
                 continue
