@@ -1,5 +1,4 @@
 from cms import settings
-from cms.admin.change_list import CMSChangeList, get_changelist_admin
 from cms.admin.dialog.views import get_copy_dialog
 from cms.admin.forms import PageAddForm
 from cms.admin.permissionadmin import PAGE_ADMIN_INLINES, \
@@ -243,12 +242,10 @@ def get_plugin_admin(admin_base):
         
     return RealPluginAdmin
 
-from cms.admin.change_list import ReplaceChangeListAdmin
-
-PluginAdmin = get_plugin_admin(ReplaceChangeListAdmin)
+PluginAdmin = get_plugin_admin(admin.ModelAdmin)
 
 if 'reversion' in settings.INSTALLED_APPS:
     
-    from cms.admin.versionadmin import VersionAdmin
+    from reversion.admin import VersionAdmin
     
     PluginVersionAdmin = get_plugin_admin(VersionAdmin) 

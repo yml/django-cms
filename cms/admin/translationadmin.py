@@ -2,29 +2,6 @@ from cms import settings
 from django.contrib import admin
 from django.forms.models import model_to_dict, fields_for_model, save_instance
 from cms.utils import get_language_from_request
-from django.contrib.admin.views.main import ChangeList
-from cms.admin.change_list import get_changelist_admin
-
-class ApplyLanguageChangelist(ChangeList):
-    
-    def apply_to_results(self, results, request):
-        
-        results = list(results)
-        id_list = [r.pk for r in results]
-        pk_index_map = dict([(pk, index) for index, pk in enumerate(id_list)])
-        
-        model = self.model_admin.translation_model
-        translations = model.objects.filter(**{
-            self.model_admin.translation_model_fk + '__in': id_list
-        })
-        
-        for obj in translations:
-            index = pk_index_map[getattr(obj, self.model_admin.translation_model_fk + '_id')]
-            if not hasattr(results[index], 'translations'):
-                results[index].translations = []
-            results[index].translations.append(obj)
-        
-        return results
 
 """
 Example usage:
@@ -65,19 +42,42 @@ def get_translation_admin(admin_base):
     
         translation_model = None
         translation_model_fk = ''
-        translation_model_language = 'language'    
-    
-        changelist_class = ApplyLanguageChangelist
+        translation_model_language = 'language'
 
         change_list_template = 'admin/apply_change_list.html'
 
         list_display = ('languages',)
     
-        def languages(self, obj):
-          return ' '.join(['<a href="%s/?language=%s">%s</a>' % (obj.pk, t.language, t.language.upper()) for t in obj.translations])
+        def languages(self, obj, extra):
+          return ' '.join(['<a href="%s/?language=%s">%s</a>' % (obj.pk, t.language, t.language.upper()) for t in extra['translations']])
         languages.short_description = 'Languages'
         languages.allow_tags = True
-
+        languages.takes_extra = True
+        
+        def add_extra_to_results(self, results, request):
+            
+            if hasattr(super(RealTranslationAdmin, self), 'add_extra_to_results'):
+                extras = super(RealTranslationAdmin, self).add_extra_to_results(results, request)
+            else:
+                extras = [{} for r in results]
+            
+            results = list(results)
+            id_list = [r.pk for r in results]
+            pk_index_map = dict([(pk, index) for index, pk in enumerate(id_list)])
+            
+            model = self.translation_model
+            translations = model.objects.filter(**{
+                self.translation_model_fk + '__in': id_list
+            })
+            
+            for obj in translations:
+                index = pk_index_map[getattr(obj, self.translation_model_fk + '_id')]
+                if not 'translations' in extras[index]:
+                    extras[index]['translations'] = []
+                extras[index]['translations'].append(obj)
+            
+            return extras
+            
         def get_translation(self, request, obj):
     
             language = get_language_from_request(request)
@@ -128,16 +128,15 @@ def get_translation_admin(admin_base):
             
     return RealTranslationAdmin
 
-from cms.admin.change_list import ReplaceChangeListAdmin
 from cms.admin.pluginadmin import PluginAdmin
 
-TranslationAdmin = get_translation_admin(ReplaceChangeListAdmin)
+TranslationAdmin = get_translation_admin(admin.ModelAdmin)
 
 TranslationPluginAdmin = get_translation_admin(PluginAdmin)
 
 if 'reversion' in settings.INSTALLED_APPS:
     
-    from cms.admin.versionadmin import VersionAdmin    
+    from reversion.admin import VersionAdmin    
     from cms.admin.pluginadmin import PluginVersionAdmin
     
     TranslationVersionAdmin = get_translation_admin(VersionAdmin)

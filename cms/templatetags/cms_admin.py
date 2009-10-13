@@ -158,6 +158,11 @@ def result_headers(cl):
 
         th_classes = []
         new_order_type = 'asc'
+                    
+        real_field_name = (field_name == '__str__' or field_name == '__unicode__') and 'description' or (callable(field_name) and field_name.__name__) or field_name
+  
+        th_classes.append('col-%s' % real_field_name)
+        
         if field_name == cl.order_field or admin_order_field == cl.order_field:
             th_classes.append('sorted %sending' % cl.order_type.lower())
             new_order_type = {'asc': 'desc', 'desc': 'asc'}[cl.order_type.lower()]
@@ -167,7 +172,7 @@ def result_headers(cl):
                "url": cl.get_query_string({ORDER_VAR: i, ORDER_TYPE_VAR: new_order_type}),
                "class_attrib": mark_safe(th_classes and ' class="%s"' % ' '.join(th_classes) or '')}
                
-def items_with_class_for_result(cl, result, form, use_div=False):
+def items_with_class_for_result(cl, result, form, extra, use_div=False):
     first = True
     pk = cl.lookup_opts.pk.attname
     for field_name in cl.list_display:
@@ -185,11 +190,8 @@ def items_with_class_for_result(cl, result, form, use_div=False):
                 elif hasattr(cl.model_admin, field_name) and \
                    not field_name == '__str__' and not field_name == '__unicode__':
                     attr = getattr(cl.model_admin, field_name)
-                    value = attr(result)
-                elif hasattr(cl, field_name) and \
-                   not field_name == '__str__' and not field_name == '__unicode__':
-                    attr = getattr(cl, field_name)
-                    value = attr(result)
+                    takes_extra = getattr(attr, 'takes_extra', False)
+                    value = takes_extra and attr(result, extra) or attr(result)
                 else:
                     attr = getattr(result, field_name)
                     if callable(attr):
@@ -280,16 +282,16 @@ def items_with_class_for_result(cl, result, form, use_div=False):
         yield mark_safe(force_unicode(form[cl.model._meta.pk.name]))
         
 def results(cl, request):
-    if hasattr(cl, 'apply_to_results'):
-        apply_to_results = cl.apply_to_results
+    if hasattr(cl, 'model_admin') and hasattr(cl.model_admin, 'add_extra_to_results'):
+        add_extra_to_results = cl.model_admin.add_extra_to_results
     else:
-        apply_to_results = lambda x, y: x
+        add_extra_to_results = lambda x, y: [None for o in x]
     if cl.formset:
-        for res, form in zip(apply_to_results(cl.result_list, request), cl.formset.forms):
-            yield list(items_with_class_for_result(cl, res, form))
+        for res, form, extra in zip(cl.result_list, cl.formset.forms, add_extra_to_results(cl.result_list, request)):
+            yield (extra, list(items_with_class_for_result(cl, res, form, extra)))
     else:
-        for res in apply_to_results(cl.result_list, request):
-            yield list(items_with_class_for_result(cl, res, None))
+        for res, extra in zip(cl.result_list, add_extra_to_results(cl.result_list, request)):
+            yield (extra, list(items_with_class_for_result(cl, res, None, extra)))
 
 def apply_result_list(cl, request):
     return {'cl': cl,
@@ -297,22 +299,22 @@ def apply_result_list(cl, request):
             'results': list(results(cl, request))}
             
 def mptt_results(cl, request):
-    if hasattr(cl, 'apply_to_results'):
-        apply_to_results = cl.apply_to_results
+    if hasattr(cl, 'model_admin') and hasattr(cl.model_admin, 'add_extra_to_results'):
+        add_extra_to_results = cl.model_admin.add_extra_to_results
     else:
-        apply_to_results = lambda x, y: x
+        add_extra_to_results = lambda x, y: [None for o in x]
     if cl.formset:
-        for res, form in zip(apply_to_results(cl.result_list, request), cl.formset.forms):
-            yield (res, list(items_with_class_for_result(cl, res, form, use_div=True)))
+        for res, form, extra in zip(cl.result_list, cl.formset.forms, add_extra_to_results(cl.result_list, request)):
+            yield (extra, list(items_with_class_for_result(cl, res, form, extra, use_div=True)))
     else:
-        for res in apply_to_results(cl.result_list, request):
-            yield (res, list(items_with_class_for_result(cl, res, None, use_div=True)))
+        for res, extra in zip(cl.result_list, add_extra_to_results(cl.result_list, request)):
+            yield (extra, list(items_with_class_for_result(cl, res, None, extra, use_div=True)))
 
 def mptt_result_list(cl, request):
     return {'cl': cl,
             'result_headers': list(result_headers(cl)),
             'results': list(mptt_results(cl, request))}
 
-apply_result_list = register.inclusion_tag("admin/change_list_results.html")(apply_result_list)
+apply_result_list = register.inclusion_tag("admin/apply_change_list_results.html")(apply_result_list)
 
 mptt_result_list = register.inclusion_tag("admin/mptt_change_list_results.html")(mptt_result_list)

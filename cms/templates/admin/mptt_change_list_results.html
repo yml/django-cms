@@ -21,8 +21,8 @@
 </ul>
 
 <div id="jstree_0" class="tree root_allow_children">
-{% for obj, result in results %}
-    {% if obj.structure.new_level %}
+{% for extra, result in results %}
+    {% if extra.structure.new_level %}
         <ul class="{% if forloop.first %}tree-default{% endif %}{% if forloop.last %}last{% endif %}">
             <li class="moveable{% if forloop.last %} last{% endif %}">
     {% else %}
@@ -33,7 +33,7 @@
         <div class="col1">{{ result.0 }}</div>
         <div class="col2">{% for item in result|slice:"1:" %}{{ item }}{% endfor %}</div>
     </div>
-    {% for level in obj.structure.closed_levels %}</li></ul>{% endfor %}
+    {% for level in extra.structure.closed_levels %}</li></ul>{% endfor %}
 {% endfor %}
 </div>
 
