@@ -244,7 +244,7 @@ if 'reversion' in settings.INSTALLED_APPS:
     
 def save_all_plugins(request, content_object, excludes=None):
     
-    if hasattr(content_object, 'has_change_permission') and not page.has_change_permission(request):
+    if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
         raise Http404
     
     ctype = ContentType.objects.get_for_model(content_object.__class__)
