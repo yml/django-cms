@@ -113,7 +113,6 @@ def get_translation_admin(admin_base):
     
             return form
     
-    
         def save_model(self, request, obj, form, change):
     
             super(RealTranslationAdmin, self).save_model(request, obj, form, change)
@@ -126,7 +125,8 @@ def get_translation_admin(admin_base):
             
             self.save_translation_model(request, obj, translation_obj, form, change)
             
-        def save_translation_model(self, request, obj, translation_obj, form, change): # to allow overriding
+        def save_translation_model(self, request, obj, translation_obj, form, change): 
+            # to allow overriding, redo to be easier to use with mptt/permissions/publisher?
             
             if 'history' in request.path or 'recover' in request.path:
     
@@ -148,7 +148,7 @@ def get_translation_admin(admin_base):
                 obj = rev.object
                 if getattr(obj, self.translation_model_language) == language:
                     field_dict.update(model_to_dict(obj))
-                    break
+                    break    
             return field_dict
         
     return RealTranslationAdmin

@@ -176,14 +176,7 @@ def get_plugin_admin(admin_base):
         def get_language(self, request, obj):
             return get_language_from_request(request, obj) # should default to language from language_code? 
     
-        def get_plugin_list(self, request, obj, language, placeholder_name):    
-            ctype = ContentType.objects.get_for_model(obj.__class__)
-            plugin_list = CMSPlugin.objects.filter(content_type=ctype, object_id=obj.pk,
-                language=language, placeholder=placeholder_name, parent=None
-            ).order_by('position')
-            return plugin_list
-            
-        def _get_plugin_list(self, request, obj, language, placeholder_name):    # a work in progress
+        def get_plugin_list(self, request, obj, language, placeholder_name):    # a work in progress
             
             if "history" in request.path or 'recover' in request.path:
                 
@@ -212,7 +205,11 @@ def get_plugin_admin(admin_base):
                 return plugin_list
                 
             else:
-                return super(Class, self).get_plugin_list(request, obj, language, placeholder_name)
+                ctype = ContentType.objects.get_for_model(obj.__class__)
+                plugin_list = CMSPlugin.objects.filter(content_type=ctype, object_id=obj.pk,
+                    language=language, placeholder=placeholder_name, parent=None
+                ).order_by('position')
+                return plugin_list
                 
         def get_form(self, request, obj=None, **kwargs):
             """
@@ -239,6 +236,17 @@ def get_plugin_admin(admin_base):
             form.base_fields['language'].initial = language        
             
             return form
+                
+        def render_revision_form(self, request, obj, version, context, revert=False, recover=False):
+
+            response = super(RealPluginAdmin, self).render_revision_form(request, obj, version, context, revert, recover)
+            if request.method == "POST" \
+                and ('history' in request.path or 'recover' in request.path) \
+                and response.status_code == 302:
+                    
+                # revert plugins
+                revert_plugins(request, version.pk, obj)
+            return response
         
     return RealPluginAdmin
 
