@@ -1,7 +1,10 @@
 from cms import settings
 from django.contrib import admin
 from django.forms.models import model_to_dict, fields_for_model, save_instance
+from django import forms
+from django.utils.safestring import mark_safe
 from django.contrib.contenttypes.models import ContentType
+from os.path import join
 from cms.utils import get_language_from_request
 
 """
@@ -36,6 +39,23 @@ class BlogEntryAdmin(PluginTranslationAdmin):
 
 admin.site.register(BlogEntry, BlogEntryAdmin)
 """
+class LanguageWidget(forms.HiddenInput):
+    
+    is_hidden = False
+
+    def render(self, name, value, attrs=None):
+        
+        hidden_input = super(LanguageWidget, self).render(name, value, attrs=attrs)
+        
+        buttons = []
+        for lang in settings.LANGUAGES:
+            button_classes = u'class="language_button%s"' % (lang[0] == value and ' selected' or '')
+            buttons.append(u'''<input onclick="trigger_lang_button(this,'./?language=%s');"%s id="debutton" name="%s" value="%s" type="button">''' % (
+                lang[0], button_classes, lang[0], lang[1]))
+            
+        tabs = """%s<div id="page_form_lang_tabs">%s</div>""" % (hidden_input, u''.join(buttons))
+
+        return mark_safe(tabs)
 
 def get_translation_admin(admin_base):
     
@@ -48,7 +68,25 @@ def get_translation_admin(admin_base):
         change_list_template = 'admin/apply_change_list.html'
 
         list_display = ('languages',)
-    
+        
+        class Media:
+            css = {
+                'all': [join(settings.CMS_MEDIA_URL, path) for path in (
+                    'css/rte.css',
+                    'css/pages.css',
+                    'css/change_form.css',
+                    'css/jquery.dialog.css',
+                )]
+            }
+            js = [join(settings.CMS_MEDIA_URL, path) for path in (
+                'js/lib/jquery.js',
+                'js/lib/jquery.query.js',
+                'js/lib/ui.core.js',
+                'js/lib/ui.dialog.js',
+                'js/change_form.js'
+            )]
+            
+        
         def languages(self, obj, extra={}):
             if 'translations' in extra:
                 return ' '.join(['<a href="%s/?language=%s">%s</a>' % (obj.pk, t.language, t.language.upper()) for t in extra['translations']])
@@ -110,7 +148,9 @@ def get_translation_admin(admin_base):
                 form.base_fields[name] = field
                 if name in initial:
                     form.base_fields[name].initial = initial[name]
-    
+                    
+            if obj:
+                form.base_fields['language'].widget = LanguageWidget()   
             return form
     
         def save_model(self, request, obj, form, change):
