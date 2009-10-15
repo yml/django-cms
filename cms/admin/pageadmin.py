@@ -195,12 +195,12 @@ class PageAdmin(admin.ModelAdmin):
         
         url_patterns = patterns('',
             
-            pat(r'^.+/add-plugin/$', add_plugin),
-            url(r'^.+/edit-plugin/([0-9]+)/$',
+            pat(r'/add-plugin/$', add_plugin),
+            url(r'/edit-plugin/([0-9]+)/$',
                 self.admin_site.admin_view(curry(edit_plugin, admin_site=self.admin_site)),
                 name='%s_edit_plugin' % info),
-            pat(r'^(?:[0-9]+)/remove-plugin/$', remove_plugin),
-            pat(r'^(?:[0-9]+)/move-plugin/$', move_plugin),
+            pat(r'^/remove-plugin/$', remove_plugin),
+            pat(r'^/move-plugin/$', move_plugin),
             pat(r'^([0-9]+)/move-page/$', self.move_page),
             pat(r'^([0-9]+)/copy-page/$', self.copy_page),
             pat(r'^([0-9]+)/change-status/$', change_status),
@@ -209,8 +209,6 @@ class PageAdmin(admin.ModelAdmin):
             pat(r'^([0-9]+)/permissions/$', self.get_permissions),
             pat(r'^([0-9]+)/moderation-states/$', self.get_moderation_states),
             pat(r'^([0-9]+)/change-moderation/$', change_moderation),
-            
-            # NOTE: revert plugin is newly integrated in overriden revision_view
             pat(r'^([0-9]+)/approve/$', self.approve_page), # approve page 
             pat(r'^([0-9]+)/remove-delete-state/$', self.remove_delete_state),
             pat(r'^([0-9]+)/dialog/copy/$', get_copy_dialog), # copy dialog
