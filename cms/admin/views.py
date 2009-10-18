@@ -12,6 +12,7 @@ from django.template.defaultfilters import escapejs, force_escape
 from django.views.decorators.http import require_POST
 from cms.utils.admin import render_admin_menu_item
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from cms.utils import get_language_from_request
 
 from django.contrib.contenttypes.models import ContentType
 
@@ -271,6 +272,7 @@ def revert_plugins(request, version_id, obj):
     content_object = obj
     ctype = ContentType.objects.get_for_model(content_object.__class__)
     object_id = content_object.pk    
+    lang = get_language_from_request(request)
     for rev in revs:
         obj = rev.object
         
@@ -282,7 +284,8 @@ def revert_plugins(request, version_id, obj):
             pass
             #page = obj #Page.objects.get(pk=obj.pk)
         elif obj.__class__ == Title:
-            titles.append(obj)
+            if not obj.language == lang: 
+                titles.append(obj) 
         else:
             others.append(rev)
     if hasattr(content_object, 'has_change_permission') and not page.has_change_permission(request):
@@ -300,18 +303,13 @@ def revert_plugins(request, version_id, obj):
         for old in current_plugins:
             if old.pk == plugin.pk:
                 current_plugins.remove(old)
-    for title in titles: # what does this have to do with reverting plugins?
-        title.page = content_object
-        try:
-            title.save()
-        except:
-            title.pk = Title.objects.get(page=content_object, language=title.language).pk
-            title.save()
+    for title in titles:
+        title.page = content_object 
+        title.save()
     for other in others:
         other.object.save()
     for plugin in current_plugins:
         plugin.delete()
-        
 
 @require_POST
 def change_moderation(request, page_id):
