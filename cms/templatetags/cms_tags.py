@@ -2,6 +2,7 @@ from django import template
 from django.core.cache import cache
 from django.core.mail import send_mail, mail_managers
 from django.contrib.sites.models import Site
+from django.contrib.contenttypes.models import ContentType
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from cms.exceptions import NoHomeFound
@@ -15,6 +16,7 @@ from cms.utils import get_language_from_request,\
 from cms.utils import navigation
 from cms.utils.i18n import get_fallback_languages
 
+page_contenttype = ContentType.objects.get_for_model(Page)
 
 register = template.Library()
 
@@ -503,7 +505,7 @@ class PlaceholderNode(template.Node):
         page = request.current_page
         if page == "dummy":
             return ""
-        plugins = get_cmsplugin_queryset(request).filter(page=page, language=l, placeholder__iexact=self.name, parent__isnull=True).order_by('position').select_related()
+        plugins = get_cmsplugin_queryset(request).filter(content_type=page_contenttype, object_id=page.pk, language=l, placeholder__iexact=self.name, parent__isnull=True).order_by('position').select_related()
         if settings.CMS_PLACEHOLDER_CONF and self.name in settings.CMS_PLACEHOLDER_CONF:
             if "extra_context" in settings.CMS_PLACEHOLDER_CONF[self.name]:
                 context.update(settings.CMS_PLACEHOLDER_CONF[self.name]["extra_context"])
