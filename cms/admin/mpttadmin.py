@@ -34,11 +34,21 @@ def get_mptt_admin(admin_base):
             
             if hasattr(super(RealMpttAdmin, self), 'refine_results'):
                 results, forms, extras = super(RealMpttAdmin, self).refine_results(results, forms, extras, request)
-            
+
+            # add object permissions to extra in the superclasses refine_results
+ 
             for index, result_structure in enumerate(tree_item_iterator(results)):
-                extras[index]['structure'] = result_structure[1]
+                extras[index]['structure'] = result_structure[1] # add info on leaf nodes too?
+                extras[index]['li_metadata'] = self.get_li_metadata(result_structure[0], extras[index])
+                extras[index]['li_classes'] = self.get_li_classes(result_structure[0], extras[index])
             
             return (results, forms, extras)
+
+        def get_li_metadata(self, obj, extra):
+             return {}
+
+        def get_li_classes(self, obj, extra): # grab info on permissions from extra 
+            return []
         
         def edit_links(self, obj, extra):
             return u"""
