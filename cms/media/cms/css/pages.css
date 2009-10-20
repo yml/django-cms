@@ -343,6 +343,8 @@ div#sitemap ul.header li{
 
 #sitemap .cont:hover .col1 .title{ background-position:0px -40px;}
 #sitemap .cont:hover .col1 a.changelink{display:inline;}
+#sitemap .cont .col1 div { float: left; }
+#sitemap .cont .col2 { float: right; }
 
 #sitemap li#dragged{
 	min-width:500px;
