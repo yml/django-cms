@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from cms.models import MASK_PAGE, MASK_CHILDREN, MASK_DESCENDANTS
 from cms.utils.admin import get_admin_menu_item_context
+from cms import settings as cms_settings
 
 # all imports from original remove some later
 from django.conf import settings
@@ -102,6 +103,7 @@ def render_plugin(context, plugin):
 
 render_plugin = register.inclusion_tag('cms/content.html', takes_context=True)(render_plugin)
 
+<<<<<<< HEAD:cms/templatetags/cms_admin.py
 
 def result_headers(cl):
     lookup_opts = cl.lookup_opts
@@ -328,3 +330,27 @@ def mptt_result_list(cl, request):
 apply_result_list = register.inclusion_tag("admin/apply_change_list_results.html")(apply_result_list)
 
 mptt_result_list = register.inclusion_tag("admin/mptt_change_list_results.html")(mptt_result_list)
+
+def page_submit_row(context):
+    opts = context['opts']
+    change = context['change']
+    is_popup = context['is_popup']
+    save_as = context['save_as']
+    show_delete_translation = context.get('show_delete_translation')  
+    language = context['language']
+    return {
+        'onclick_attrib': (opts.get_ordered_objects() and change
+                            and 'onclick="submitOrderForm();"' or ''),
+        'show_delete_link': (not is_popup and context['has_delete_permission']
+                              and (change or context['show_delete'])),
+        'show_save_as_new': not is_popup and change and save_as,
+        'show_save_and_add_another': context['has_add_permission'] and 
+                            not is_popup and (not save_as or context['add']),
+        'show_save_and_continue': not is_popup and context['has_change_permission'],
+        'is_popup': is_popup,
+        'show_save': True,
+        'language': language,
+        'language_name': [name for langcode, name in cms_settings.CMS_LANGUAGES if langcode == language][0],
+        'show_delete_translation': show_delete_translation
+    }
+page_submit_row = register.inclusion_tag('admin/page_submit_line.html', takes_context=True)(page_submit_row)
