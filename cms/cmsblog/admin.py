@@ -1,8 +1,8 @@
 from django.contrib import admin
-from cms.admin.translationadmin import TranslationPluginVersionAdmin
+from cms.admin.pluginadmin import PluginAdmin
 from cms.cmsblog.models import BlogEntry, Title
 
-class BlogEntryAdmin(TranslationPluginVersionAdmin):
+class BlogEntryAdmin(PluginAdmin):
 
     translation_model = Title
     translation_model_fk = 'entry'
