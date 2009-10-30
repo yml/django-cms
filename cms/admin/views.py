@@ -210,8 +210,8 @@ def move_plugin(request):
         if 'ids' in request.POST:
             for id in request.POST['ids'].split("_"):
                 plugin = CMSPlugin.objects.get(pk=id)
-	            if not content_object:
-	                content_object = plugin.content_object
+                if not content_object:
+                    content_object = plugin.content_object
                 
 	            if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
 	                raise Http404

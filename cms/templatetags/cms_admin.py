@@ -103,8 +103,6 @@ def render_plugin(context, plugin):
 
 render_plugin = register.inclusion_tag('cms/content.html', takes_context=True)(render_plugin)
 
-<<<<<<< HEAD:cms/templatetags/cms_admin.py
-
 def result_headers(cl):
     lookup_opts = cl.lookup_opts
 
