@@ -12,6 +12,7 @@ from django.template.defaultfilters import escapejs, force_escape
 from django.views.decorators.http import require_POST
 from cms.utils.admin import render_admin_menu_item
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from cms.utils.plugins import get_placeholders
 from cms.utils import get_language_from_request
 
 from django.contrib.contenttypes.models import ContentType
@@ -64,7 +65,21 @@ def add_plugin(request):
             content_object = ctype.get_object_for_this_type(pk=object_id)
             placeholder = request.POST['placeholder'].lower()
             language = request.POST['language']
+
             position = CMSPlugin.objects.filter(content_type=ctype, object_id=object_id, language=language, placeholder=placeholder).count()
+
+            limits = settings.CMS_PLACEHOLDER_CONF.get("%s %s" % (page.template, placeholder), {}).get('limits', None)
+            if not limits:
+                limits = settings.CMS_PLACEHOLDER_CONF.get(placeholder, {}).get('limits', None)
+            if limits:
+                global_limit = limits.get("global")
+                type_limit = limits.get(plugin_type)
+                if global_limit and position >= global_limit:
+                    return HttpResponseBadRequest("This placeholder already has the maximum number of plugins")
+                elif type_limit:
+                    type_count = CMSPlugin.objects.filter(page=page, language=language, placeholder=placeholder, plugin_type=plugin_type).count()
+                    if type_count >= type_limit:
+                        return HttpResponseBadRequest("This placeholder already has the maximum number allowed %s plugins.'%s'" % plugin_type)
         else:
             parent_id = request.POST['parent_id']
             parent = get_object_or_404(CMSPlugin, pk=parent_id)
@@ -192,18 +207,37 @@ def move_plugin(request):
     if request.method == "POST" and not 'history' in request.path:
         pos = 0
         content_object = None
-        for id in request.POST['ids'].split("_"):
-            plugin = CMSPlugin.objects.get(pk=id)
-            if not content_object:
-                content_object = plugin.content_object
-            
-            if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
-                raise Http404
-
-            if plugin.position != pos:
-                plugin.position = pos
-                plugin.save()
-            pos += 1
+        if 'ids' in request.POST:
+            for id in request.POST['ids'].split("_"):
+                plugin = CMSPlugin.objects.get(pk=id)
+	            if not content_object:
+	                content_object = plugin.content_object
+                
+	            if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
+	                raise Http404
+    
+                if plugin.position != pos:
+                    plugin.position = pos
+                    plugin.save()
+                pos += 1
+        elif 'plugin_id' in request.POST:
+            plugin = CMSPlugin.objects.get(pk=int(request.POST['plugin_id']))
+            content_object = plugin.content_object
+            ctype = ContentType.objects.get_for_model(content_object.__class__)
+            placeholder = request.POST['placeholder']
+            placeholders = get_placeholders(request, plugin.content_object.template)
+            if not placeholder in placeholders:
+                return HttpResponse(str("error"))
+            plugin.placeholder = placeholder
+            position = 0
+            try:
+                position = CMSPlugin.objects.filter(content_type=cytpe, object_id=plugin.object_id, placeholder=placeholder).order_by('position')[0].position + 1
+            except IndexError:
+                pass
+            plugin.position = position
+            plugin.save()
+        else:
+            HttpResponse(str("error"))
         if content_object and 'reversion' in settings.INSTALLED_APPS:
             content_object.save()
             save_all_plugins(request, content_object)
@@ -211,7 +245,7 @@ def move_plugin(request):
             revision.comment = unicode(_(u"Plugins where moved")) 
         return HttpResponse(str("ok"))
     else:
-        raise Http404
+        return HttpResponse(str("error"))
     
 if 'reversion' in settings.INSTALLED_APPS:
     move_plugin = revision.create_on_success(move_plugin)
@@ -305,7 +339,11 @@ def revert_plugins(request, version_id, obj):
                 current_plugins.remove(old)
     for title in titles:
         title.page = content_object 
-        title.save()
+        try:
+            title.save()
+        except:
+            title.pk = Title.objects.get(page=page, language=title.language).pk
+            title.save()
     for other in others:
         other.object.save()
     for plugin in current_plugins:
