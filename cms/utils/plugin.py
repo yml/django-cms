@@ -7,6 +7,7 @@ from django.template.defaultfilters import title
 from django.template.loader import render_to_string
 import copy
 
+from django.contrib.contenttypes.models import ContentType
 from cms.models import Page
 
 page_contenttype = ContentType.objects.get_for_model(Page)
