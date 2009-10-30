@@ -3,6 +3,7 @@ from django.conf import settings
 from cms import settings as cms_settings
 from cms.plugin_base import CMSPluginBase
 from cms.utils.helpers import reversion_register
+from cms.models import Page
 
 class PluginPool(object):
     def __init__(self):
@@ -42,7 +43,7 @@ class PluginPool(object):
             final_plugins = []
             for plugin in plugins:
                 allowed_plugins = []
-                if page:
+                if page.__class__ == Page and page:
                     allowed_plugins = cms_settings.CMS_PLACEHOLDER_CONF.get("%s %s" % (page.template, placeholder), {}).get("plugins")
                 if not allowed_plugins:
                     allowed_plugins = cms_settings.CMS_PLACEHOLDER_CONF.get(placeholder, {}).get("plugins")

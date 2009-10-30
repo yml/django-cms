@@ -67,19 +67,19 @@ def add_plugin(request):
             language = request.POST['language']
 
             position = CMSPlugin.objects.filter(content_type=ctype, object_id=object_id, language=language, placeholder=placeholder).count()
-
-            limits = settings.CMS_PLACEHOLDER_CONF.get("%s %s" % (page.template, placeholder), {}).get('limits', None)
-            if not limits:
-                limits = settings.CMS_PLACEHOLDER_CONF.get(placeholder, {}).get('limits', None)
-            if limits:
-                global_limit = limits.get("global")
-                type_limit = limits.get(plugin_type)
-                if global_limit and position >= global_limit:
-                    return HttpResponseBadRequest("This placeholder already has the maximum number of plugins")
-                elif type_limit:
-                    type_count = CMSPlugin.objects.filter(page=page, language=language, placeholder=placeholder, plugin_type=plugin_type).count()
-                    if type_count >= type_limit:
-                        return HttpResponseBadRequest("This placeholder already has the maximum number allowed %s plugins.'%s'" % plugin_type)
+            if ctype.model_class() == Page:
+                limits = settings.CMS_PLACEHOLDER_CONF.get("%s %s" % (content_object.template, placeholder), {}).get('limits', None)
+                if not limits:
+                    limits = settings.CMS_PLACEHOLDER_CONF.get(placeholder, {}).get('limits', None)
+                if limits:
+                    global_limit = limits.get("global")
+                    type_limit = limits.get(plugin_type)
+                    if global_limit and position >= global_limit:
+                        return HttpResponseBadRequest("This placeholder already has the maximum number of plugins")
+                    elif type_limit:
+                        type_count = CMSPlugin.objects.filter(content_type=ctype, object_id=object_id, language=language, placeholder=placeholder, plugin_type=plugin_type).count()
+                        if type_count >= type_limit:
+                            return HttpResponseBadRequest("This placeholder already has the maximum number allowed %s plugins.'%s'" % plugin_type)
         else:
             parent_id = request.POST['parent_id']
             parent = get_object_or_404(CMSPlugin, pk=parent_id)
@@ -231,7 +231,7 @@ def move_plugin(request):
             plugin.placeholder = placeholder
             position = 0
             try:
-                position = CMSPlugin.objects.filter(content_type=cytpe, object_id=plugin.object_id, placeholder=placeholder).order_by('position')[0].position + 1
+                position = CMSPlugin.objects.filter(content_type=cytpe, object_id=content_object.object_id, placeholder=placeholder).order_by('position')[0].position + 1
             except IndexError:
                 pass
             plugin.position = position
