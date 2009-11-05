@@ -1,5 +1,6 @@
 import operator
 from django.forms.widgets import Media
+from django.contrib.contenttypes.models import ContentType
 from cms.utils import get_language_from_request
 from cms.utils.moderator import get_cmsplugin_queryset
 
@@ -8,7 +9,7 @@ def get_plugins(request, obj, lang=None):
     contenttype = ContentType.objects.get_for_model(obj.__class__)
     if not hasattr(obj, '_%s_plugins_cache' % lang):
         setattr(obj, '_%s_plugins_cache' % lang,  get_cmsplugin_queryset(request).filter(
-            content_type=contenttype, object_id=page.pk, language=lang, parent__isnull=True
+            content_type=contenttype, object_id=obj.pk, language=lang, parent__isnull=True
         ).order_by('placeholder', 'position').select_related() )
     return getattr(obj, '_%s_plugins_cache' % lang)
 
