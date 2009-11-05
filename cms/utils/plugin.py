@@ -3,15 +3,10 @@ from cms.utils import get_language_from_request
 from cms import settings
 from django.conf import settings as django_settings
 from cms.plugin_pool import plugin_pool
+from cms.plugins.utils import get_plugins
 from django.template.defaultfilters import title
 from django.template.loader import render_to_string
 import copy
-
-from django.contrib.contenttypes.models import ContentType
-from cms.models import Page
-
-page_contenttype = ContentType.objects.get_for_model(Page)
-
 
 def render_plugins_for_context(placeholder_name, page, context_to_copy, theme=None):
     """
@@ -21,7 +16,8 @@ def render_plugins_for_context(placeholder_name, page, context_to_copy, theme=No
     context = copy.copy(context_to_copy) 
     l = get_language_from_request(context['request'])
     request = context['request']
-    plugins = get_cmsplugin_queryset(request).filter(content_type=page_contenttype, object_id=page.pk, language=l, placeholder__iexact=placeholder_name, parent__isnull=True).order_by('position').select_related()
+
+    plugins = [plugin for plugin in get_plugins(request, page) if plugin.placeholder == placeholder_name]
     if settings.CMS_PLACEHOLDER_CONF and placeholder_name in settings.CMS_PLACEHOLDER_CONF:
         if "extra_context" in settings.CMS_PLACEHOLDER_CONF[placeholder_name]:
             context.update(settings.CMS_PLACEHOLDER_CONF[placeholder_name]["extra_context"])
@@ -49,6 +45,3 @@ def render_plugins_for_context(placeholder_name, page, context_to_copy, theme=No
         context['plugin_index'] = index
         c.append(plugin.render_plugin(copy.copy(context), placeholder_name, edit=edit))
     return "".join(c)
-
-
-                             
