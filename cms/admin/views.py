@@ -1,10 +1,7 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from cms.utils import get_language_from_request
 from cms.models import Page, Title, CMSPlugin
-
 from django.contrib.contenttypes.models import ContentType
-in = revision.create_on_success(remove_plugin)
     
 def save_all_plugins(request, content_object, excludes=None):
     

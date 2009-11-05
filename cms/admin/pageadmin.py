@@ -1076,7 +1076,7 @@ class PageAdmin(model_admin):
     add_plugin = create_on_success(add_plugin)
     
     def edit_plugin(self, request, plugin_id):
-         plugin_id = int(plugin_id)
+        plugin_id = int(plugin_id)
         if not 'history' in request.path and not 'recover' in request.path:
             cms_plugin = get_object_or_404(CMSPlugin, pk=plugin_id)
             instance, plugin_admin = cms_plugin.get_plugin_instance(plugin_admin_site)
