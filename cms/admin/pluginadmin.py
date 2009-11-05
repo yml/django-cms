@@ -33,7 +33,7 @@ from django.http import HttpResponseRedirect, HttpResponse, Http404,\
     HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
-from django.template.defaultfilters import title
+from django.template.defaultfilters import title, escapejs, force_escape, escape
 from django.utils.encoding import force_unicode
 from django.utils.functional import curry
 from django.utils.translation import ugettext as _
@@ -264,8 +264,8 @@ class PluginAdmin(TranslationAdmin):
                 content_object = ctype.get_object_for_this_type(pk=object_id)
                 placeholder = request.POST['placeholder'].lower()
                 language = request.POST['language']
-    
                 position = CMSPlugin.objects.filter(content_type=ctype, object_id=object_id, language=language, placeholder=placeholder).count()
+                """
                 if ctype.model_class() == Page:
                     limits = settings.CMS_PLACEHOLDER_CONF.get("%s %s" % (content_object.template, placeholder), {}).get('limits', None)
                     if not limits:
@@ -279,6 +279,7 @@ class PluginAdmin(TranslationAdmin):
                             type_count = CMSPlugin.objects.filter(content_type=ctype, object_id=object_id, language=language, placeholder=placeholder, plugin_type=plugin_type).count()
                             if type_count >= type_limit:
                                 return HttpResponseBadRequest("This placeholder already has the maximum number allowed %s plugins.'%s'" % plugin_type)
+                """
             else:
                 parent_id = request.POST['parent_id']
                 parent = get_object_or_404(CMSPlugin, pk=parent_id)
@@ -290,7 +291,7 @@ class PluginAdmin(TranslationAdmin):
     
             if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
                 return HttpResponseForbidden(_("You do not have permission to change this page"))
-    
+                
             # Sanity check to make sure we're not getting bogus values from JavaScript:
             if not language or not language in [ l[0] for l in settings.LANGUAGES ]:
                 return HttpResponseBadRequest(_("Language must be set to a supported language!"))
@@ -303,21 +304,20 @@ class PluginAdmin(TranslationAdmin):
             if 'reversion' in settings.INSTALLED_APPS:
                 content_object.save()
                 save_all_plugins(request, content_object)
-                revision.user = request.user
+                reversion.revision.user = request.user
                 plugin_name = unicode(plugin_pool.get_plugin(plugin_type).name)
-                revision.comment = _(u"%(plugin_name)s plugin added to %(placeholder)s") % {'plugin_name':plugin_name, 'placeholder':placeholder}
+                reversion.revision.comment = _(u"%(plugin_name)s plugin added to %(placeholder)s") % {'plugin_name':plugin_name, 'placeholder':placeholder}
             return HttpResponse(str(plugin.pk))
         raise Http404
 
     add_plugin = create_on_success(add_plugin)
-    
+
     def edit_plugin(self, request, plugin_id):
         plugin_id = int(plugin_id)
         if not 'history' in request.path and not 'recover' in request.path:
             cms_plugin = get_object_or_404(CMSPlugin, pk=plugin_id)
-            instance, plugin_admin = cms_plugin.get_plugin_instance(plugin_admin_site)
-            content_object = cms_plugin.content_object
-            if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
+            instance, plugin_admin = cms_plugin.get_plugin_instance(self.admin_site)
+            if hasattr(cms_plugin.content_object, 'has_change_permission') and not cms_plugin.content_object.has_change_permission(request):
                 raise PermissionDenied 
         else:
             # history view with reversion
@@ -333,7 +333,7 @@ class PluginAdmin(TranslationAdmin):
                 if obj.__class__ == CMSPlugin and obj.pk == plugin_id:
                     cms_plugin = obj
                     break
-            inst, plugin_admin = cms_plugin.get_plugin_instance(plugin_admin_site)
+            inst, plugin_admin = cms_plugin.get_plugin_instance(self.admin_site)
             instance = None
             if cms_plugin.get_plugin_class().model == CMSPlugin:
                 instance = cms_plugin
@@ -377,9 +377,9 @@ class PluginAdmin(TranslationAdmin):
                 # perform this only if object was successfully changed
                 cms_plugin.content_object.save()
                 save_all_plugins(request, cms_plugin.content_object, [cms_plugin.pk])
-                revision.user = request.user
+                reversion.revision.user = request.user
                 plugin_name = unicode(plugin_pool.get_plugin(cms_plugin.plugin_type).name)
-                revision.comment = _(u"%(plugin_name)s plugin edited at position %(position)s in %(placeholder)s") % {'plugin_name':plugin_name, 'position':cms_plugin.position, 'placeholder': cms_plugin.placeholder}
+                reversion.revision.comment = _(u"%(plugin_name)s plugin edited at position %(position)s in %(placeholder)s") % {'plugin_name':plugin_name, 'position':cms_plugin.position, 'placeholder': cms_plugin.placeholder}
                 
             # read the saved object from plugin_admin - ugly but works
             saved_object = plugin_admin.saved_object
@@ -394,10 +394,10 @@ class PluginAdmin(TranslationAdmin):
                 'icon': force_escape(escapejs(saved_object.get_instance_icon_src())),
                 'alt': force_escape(escapejs(saved_object.get_instance_icon_alt())),
             }
-            return render_to_response('plugin_admin/cms/page/plugin_forms_ok.html', context, RequestContext(request))
+            return render_to_response('admin/cms/page/plugin_forms_ok.html', context, RequestContext(request))
             
         return response
-            
+        
     edit_plugin = create_on_success(edit_plugin)
 
     def move_plugin(self, request):
@@ -412,23 +412,27 @@ class PluginAdmin(TranslationAdmin):
                     
                     if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
                         raise Http404
-        
+                
                     if plugin.position != pos:
                         plugin.position = pos
                         plugin.save()
                     pos += 1
             elif 'plugin_id' in request.POST:
                 plugin = CMSPlugin.objects.get(pk=int(request.POST['plugin_id']))
-                content_object = plugin.content_object
-                ctype = ContentType.objects.get_for_model(content_object.__class__)
                 placeholder = request.POST['placeholder']
-                placeholders = get_placeholders(request, plugin.content_object.template)
-                if not placeholder in placeholders:
-                    return HttpResponse(str("error"))
+                klass = plugin.content_object.__class__
+                ctype = ContentType.objects.get_for_model(klass)
+                content_object = plugin.content_object
+                """
+                if klass == Page:
+                    placeholders = get_placeholders(request, content_object.template)
+                    if not placeholder in placeholders:
+                        return HttpResponse(str("error"))
+                """
                 plugin.placeholder = placeholder
                 position = 0
                 try:
-                    position = CMSPlugin.objects.filter(content_type=cytpe, object_id=content_object.object_id, placeholder=placeholder).order_by('position')[0].position + 1
+                    position = CMSPlugin.objects.filter(content_type=ctype, object_id=plugin.content_object.pk, placeholder=placeholder).order_by('position')[0].position + 1
                 except IndexError:
                     pass
                 plugin.position = position
@@ -438,8 +442,8 @@ class PluginAdmin(TranslationAdmin):
             if content_object and 'reversion' in settings.INSTALLED_APPS:
                 content_object.save()
                 save_all_plugins(request, content_object)
-                revision.user = request.user
-                revision.comment = unicode(_(u"Plugins where moved")) 
+                reversion.revision.user = request.user
+                reversion.revision.comment = unicode(_(u"Plugins where moved")) 
             return HttpResponse(str("ok"))
         else:
             return HttpResponse(str("error"))
@@ -465,8 +469,8 @@ class PluginAdmin(TranslationAdmin):
             if 'reversion' in settings.INSTALLED_APPS:
                 save_all_plugins(request, content_object)
                 content_object.save()
-                revision.user = request.user
-                revision.comment = comment
+                reversion.revision.user = request.user
+                reversion.revision.comment = comment
             return HttpResponse("%s,%s" % (plugin_id, comment))
         raise Http404
     

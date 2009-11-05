@@ -47,7 +47,7 @@ def revert_plugins(request, version_id, obj):
                 titles.append(obj) 
         else:
             others.append(rev)
-    if hasattr(content_object, 'has_change_permission') and not page.has_change_permission(request):
+    if hasattr(content_object, 'has_change_permission') and not content_object.has_change_permission(request):
         raise Http404
     current_plugins = list(CMSPlugin.objects.filter(content_type=ctype, object_id=object_id))
     for plugin in cms_plugin_list:
@@ -67,7 +67,7 @@ def revert_plugins(request, version_id, obj):
         try:
             title.save()
         except:
-            title.pk = Title.objects.get(page=page, language=title.language).pk
+            title.pk = Title.objects.get(page=obj, language=title.language).pk
             title.save()
     for other in others:
         other.object.save()
