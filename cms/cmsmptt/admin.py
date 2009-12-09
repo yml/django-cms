@@ -8,7 +8,7 @@ class CategoryAdmin(MpttPluginAdmin):
     translation_model_fk = 'category'
     placeholders = ['main']
 
-    list_display = ('languages', )
+    list_display = ('pk', 'languages', )
     
     mandatory_placeholders = ('title', 'slug', 'parent', 'language',  ) 
     top_fields = []
