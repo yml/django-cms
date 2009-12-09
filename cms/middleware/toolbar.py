@@ -72,11 +72,11 @@ class ToolbarMiddleware(object):
         edit = request.session.get('cms_edit', False) and auth
         page = request.current_page
         move_dict = []
-        if edit:
+        if edit and page:
             placeholders = get_placeholders(request)
             for placeholder in placeholders:
                 d = {}
-                name = cms_settings.CMS_PLACEHOLDER_CONF.get("%s %s" % (page.template, placeholder), {}).get("name", None)
+                name = cms_settings.CMS_PLACEHOLDER_CONF.get("%s %s" % (page.get_template(), placeholder), {}).get("name", None)
                 if not name:
                     name = cms_settings.CMS_PLACEHOLDER_CONF.get(placeholder, {}).get("name", None)
                 if not name:

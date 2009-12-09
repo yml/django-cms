@@ -1,7 +1,7 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.sites.models import Site
 from django.db.models import Q
-from cms import settings
 from cms.exceptions import NoPermissionsException
 from cms.cache.permissions import get_permission_cache, set_permission_cache
 from publisher import PublisherManager
@@ -454,7 +454,7 @@ class PagePermissionsPermissionManager(models.Manager):
                 # can add is special - we are actually adding page under current page
                 if permission.grant_on & MASK_PAGE or attr is "can_add":
                     page_id_allow_list.append(permission.page.id)
-                if permission.grant_on & MASK_CHILDREN:
+                if permission.grant_on & MASK_CHILDREN and not attr is "can_add":
                     page_id_allow_list.extend(permission.page.get_children().values_list('id', flat=True))
                 elif permission.grant_on & MASK_DESCENDANTS:
                     page_id_allow_list.extend(permission.page.get_descendants().values_list('id', flat=True))

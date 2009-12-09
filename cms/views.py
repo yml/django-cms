@@ -1,4 +1,4 @@
-from cms import settings
+from django.conf import settings
 from cms.appresolver import applications_page_check
 from cms.utils import auto_render, get_template_from_request, \
     get_language_from_request
@@ -19,26 +19,27 @@ def get_current_page(path, lang, queryset, home_slug, home_tree_id):
     """
     try:
         if settings.CMS_FLAT_URLS:
-            return queryset.filter(Q(title_set__slug=path) & Q(title_set__language=lang)).distinct().select_related()[0], None
-        if home_slug:
-            queryset = queryset.exclude(Q(title_set__path=home_slug)&Q(tree_id=home_tree_id))
-            home_slug += "/"
-            title_q = Q(title_set__path=path)|(Q(title_set__path=home_slug + path)&Q(tree_id=home_tree_id))
-            
-        else:
             title_q = Q(title_set__slug=path)
-        page = queryset.filter(title_q).distinct().select_related()[0]
-        if page:
-            langs = page.get_languages() 
-            if lang in langs:
-                return page, None
+            return queryset.filter(title_q & Q(title_set__language=lang)).distinct().select_related()[0], None
+        else:
+            if home_slug:
+                queryset = queryset.exclude(Q(title_set__path=home_slug)&Q(tree_id=home_tree_id))
+                home_slug += "/"
+                title_q = Q(title_set__path=path)|(Q(title_set__path=home_slug + path)&Q(tree_id=home_tree_id))
             else:
-                path = None
-                for alt_lang in get_fallback_languages(lang):
-                    if alt_lang in langs:
-                        path = '/%s%s' % (alt_lang, page.get_absolute_url(language=lang, fallback=True))
-                        return None, path
-                return None, path
+                title_q = Q(title_set__slug=path)
+            page = queryset.filter(title_q).distinct().select_related()[0]
+            if page:
+                langs = page.get_languages() 
+                if lang in langs:
+                    return page, None
+                else:
+                    path = None
+                    for alt_lang in get_fallback_languages(lang):
+                        if alt_lang in langs:
+                            path = '/%s%s' % (alt_lang, page.get_absolute_url(language=lang, fallback=True))
+                            return None, path
+                    return None, path
     except IndexError:
         return None, None
 
@@ -103,7 +104,7 @@ def details(request, page_id=None, slug=None, template_name=settings.CMS_TEMPLAT
         
         redirect_url = current_page.get_redirect(language=lang)
         if redirect_url:
-            if settings.i18n_installed:
+            if settings.i18n_installed and redirect_url[0] == "/":
                 redirect_url = "/%s/%s" % (lang, redirect_url.lstrip("/"))
             # add language prefix to url
             return HttpResponseRedirect(redirect_url)

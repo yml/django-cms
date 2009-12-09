@@ -1,5 +1,6 @@
 from os.path import join
 from datetime import datetime
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _, get_language
@@ -10,9 +11,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from publisher import MpttPublisher
 from publisher.errors import PublisherCantPublish
 from cms.utils.urlutils import urljoin
-from cms import settings
 from cms.models.managers import PageManager, PagePermissionsPermissionManager
-from cms.models import signals as cms_signals
+
 from cms.utils.page import get_available_slug, check_title_slugs
 from cms.exceptions import NoHomeFound
 from cms.utils.helpers import reversion_register
@@ -43,7 +43,6 @@ class Page(MpttPublisher):
     creation_date = models.DateTimeField(editable=False, default=datetime.now)
     publication_date = models.DateTimeField(_("publication date"), null=True, blank=True, help_text=_('When the page should go live. Status must be "Published" for page to go live.'), db_index=True)
     publication_end_date = models.DateTimeField(_("publication end date"), null=True, blank=True, help_text=_('When to expire the page. Leave empty to never expire.'), db_index=True)
-    login_required = models.BooleanField(_('login required'), default=False)
     in_navigation = models.BooleanField(_("in navigation"), default=True, db_index=True)
     soft_root = models.BooleanField(_("soft root"), db_index=True, default=False, help_text=_("All ancestors will not be displayed in the navigation"))
     reverse_id = models.CharField(_("id"), max_length=40, db_index=True, blank=True, null=True, help_text=_("An unique identifier that is used with the page_url templatetag for linking to this page"))
@@ -79,12 +78,11 @@ class Page(MpttPublisher):
         exclude_fields_append = ['moderator_state']
     
     def __unicode__(self):
-        slug = self.get_slug(fallback=True)
-        if slug is None:
-            return u'' # otherwise we get unicode decode errors
-        else:
-            return slug
-        
+        title = self.get_menu_title(fallback=True)
+        if title is None:
+            title = u""
+        pre_title = settings.CMS_TITLE_CHARACTER * self.level
+        return u'%s%s' % (pre_title, title)
     
     def move_page(self, target, position='first-child'):
         """Called from admin interface when page is moved. Should be used on
@@ -96,6 +94,7 @@ class Page(MpttPublisher):
         # fire signal
         from cms.models.moderatormodels import PageModeratorState
         self.force_moderation_action = PageModeratorState.ACTION_MOVE
+        import cms.signals as cms_signals
         cms_signals.page_moved.send(sender=Page, instance=self) #titles get saved before moderation
         self.save(change_state=True) # always save the page after move, because of publisher
         
@@ -123,6 +122,8 @@ class Page(MpttPublisher):
                 tree = []
         else:
             tree = []
+        if tree:
+            tree[0].old_pk = tree[0].pk
         first = True
         for page in descendants:
            
@@ -265,23 +266,19 @@ class Page(MpttPublisher):
             if force_state is not None:
                 self.moderator_state = force_state
             
-        
+        # if the page is published we set the publish date if not set yet.
         if self.publication_date is None and self.published:
             self.publication_date = datetime.now()
         
-        # Drafts should not, unless they have been set to the future
-        if self.published:
-            if settings.CMS_SHOW_START_DATE:
-                if self.publication_date and self.publication_date <= datetime.now():
-                    self.publication_date = None
-            else:
-                self.publication_date = None
         if self.reverse_id == "":
             self.reverse_id = None
         
         from cms.utils.permissions import _thread_locals
-        
-        self.changed_by = _thread_locals.user.username
+        user = getattr(_thread_locals, "user", None)
+        if user:
+            self.changed_by = user.username
+        else:
+            self.changed_by = "script"
         if not self.pk:
             self.created_by = self.changed_by 
         
@@ -341,7 +338,7 @@ class Page(MpttPublisher):
                 pass
             ancestors = self.get_cached_ancestors()
             
-            if self.parent_id and ancestors[0].pk == home_pk and not self.get_title_obj_attribute("has_url_overwrite", language, fallback) and path:
+            if self.parent_id and ancestors[-1].pk == home_pk and not self.get_title_obj_attribute("has_url_overwrite", language, fallback) and path:
                 path = "/".join(path.split("/")[1:])
             
         return urljoin(reverse('pages-root'), path)
@@ -663,6 +660,7 @@ class Page(MpttPublisher):
             page.publish()
         
         # fire signal after publishing is done
+        import cms.signals as cms_signals
         cms_signals.post_publish.send(sender=Page, instance=self)
         return published
     

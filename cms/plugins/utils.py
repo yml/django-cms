@@ -5,6 +5,8 @@ from cms.utils import get_language_from_request
 from cms.utils.moderator import get_cmsplugin_queryset
 
 def get_plugins(request, obj, lang=None):
+    if not obj:
+        return []
     lang = lang or get_language_from_request(request)
     contenttype = ContentType.objects.get_for_model(obj.__class__)
     if not hasattr(obj, '_%s_plugins_cache' % lang):
