@@ -3,7 +3,7 @@ from django.db.models.base import ModelBase
 
 class TranslationModelBase(ModelBase):
     """
-    Metaclass for all plugins.
+    Metaclass for all models with translations.
     """
     def __new__(cls, name, bases, attrs):
         new_class = super(TranslationModelBase, cls).__new__(cls, name, bases, attrs)
