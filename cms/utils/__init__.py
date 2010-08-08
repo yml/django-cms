@@ -31,7 +31,8 @@ def auto_render(func):
         if not t:
             t = template_name
         context['template_name'] = t
-        context.update(kwargs['extra_context'])
+        if kwargs.has_key('extra_context'):
+            context.update(kwargs['extra_context'])
         return render_to_response(t, context, context_instance=RequestContext(request))
     return _dec
 
