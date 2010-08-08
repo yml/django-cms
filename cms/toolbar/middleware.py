@@ -15,33 +15,14 @@ from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.utils.encoding import smart_unicode
 
-HTML_TYPES = ('text/html', 'application/xhtml+xml')
-
-def inster_after_tag(string, tag, insertion):
-    no_case = string.lower()
-    index = no_case.find("<%s" % tag.lower())
-    if index > -1:
-        start_tag = index
-        end_tag = start_tag + no_case[start_tag:].find(">") + 1
-        return string[:end_tag] + insertion + string[end_tag:]
-    else:
-        return string
-
-def toolbar_plugin_processor(instance, placeholder, rendered_content, original_context):
-    return '<div id="cms_plugin_%s_%s" class="cms_plugin_holder" rel="%s" type="%s">%s</div>' % \
-        (instance.placeholder.id, instance.pk, instance.placeholder.slot, instance.plugin_type, rendered_content)
 
 class ToolbarMiddleware(object):
     """
     Middleware to set up CMS Toolbar.
     """
 
-    def show_toolbar(self, request, response):
+    def show_toolbar(self, request):
         if request.is_ajax():
-            return False
-        if response.status_code != 200:
-            return False 
-        if not response['Content-Type'].split(';')[0] in HTML_TYPES:
             return False
         try:
             if request.path_info.startswith(reverse("admin:index")):
@@ -73,13 +54,31 @@ class ToolbarMiddleware(object):
                 request.session['cms_edit'] = False
             if "edit" in request.GET:
                 request.session['cms_edit'] = True
-
-    def process_response(self, request, response):
-        if self.show_toolbar(request, response):
-            response.content = inster_after_tag(smart_unicode(response.content), u'body', smart_unicode(self.render_toolbar(request)))
-        return response
-
-    def render_toolbar(self, request):
+                
+                
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if request.method == "POST":
+            if "edit" in request.GET and "cms_username" in request.POST:
+                user = authenticate(username=request.POST.get('cms_username', ""), password=request.POST.get('cms_password', ""))
+                if user:
+                    login(request, user)
+            if request.user.is_authenticated() and "logout_submit" in request.POST:
+                logout(request)
+                request.POST = {}
+                request.method = 'GET'
+        if request.user.is_authenticated() and request.user.is_staff:
+            if "edit-off" in request.GET:
+                request.session['cms_edit'] = False
+            if "edit" in request.GET:
+                request.session['cms_edit'] = True
+        if self.show_toolbar(request):
+            extra_context = self.get_toolbar_context(request)
+            view_kwargs['extra_context'] = extra_context
+            return view_func(request, *view_args, **view_kwargs)
+        else:
+            return None
+    
+    def get_toolbar_context(self, request):
         from cms.plugin_pool import plugin_pool
         from cms.utils.admin import get_admin_menu_item_context
         """
@@ -122,7 +121,6 @@ class ToolbarMiddleware(object):
             'edit':edit,
             'CMS_MEDIA_URL': cms_settings.CMS_MEDIA_URL,
         })
-        #from django.core.context_processors import csrf
-        #context.update(csrf(request))
-        return render_to_string('cms/toolbar/toolbar.html', context, RequestContext(request))
+        return context
+
 

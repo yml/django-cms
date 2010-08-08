@@ -65,7 +65,7 @@ MIDDLEWARE_CLASSES = (
     'cms.middleware.media.PlaceholderMediaMiddleware', 
     'cms.middleware.user.CurrentUserMiddleware',
     'cms.middleware.page.CurrentPageMiddleware',
-    'cms.middleware.toolbar.ToolbarMiddleware',
+    'cms.toolbar.middleware.ToolbarMiddleware',
     
 )
 
@@ -98,7 +98,7 @@ INSTALLED_APPS = (
     'cms.plugins.inherit',
     'mptt',
     'example.sampleapp',
-    'south',
+    #'south',
 )
 
 gettext = lambda s: s
