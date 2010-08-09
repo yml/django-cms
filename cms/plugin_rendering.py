@@ -147,7 +147,6 @@ def render_placeholder(placeholder, context_to_copy):
     # Prepend frontedit toolbar output if applicable
     edit = False
     if ("edit" in request.GET or request.session.get("cms_edit", False)) and \
-        'cms.middleware.toolbar.ToolbarMiddleware' in django_settings.MIDDLEWARE_CLASSES and \
         request.user.is_staff and request.user.is_authenticated() and \
         (not page or page.has_change_permission(request)):
             edit = True
