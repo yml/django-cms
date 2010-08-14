@@ -65,6 +65,7 @@ MIDDLEWARE_CLASSES = (
     'cms.middleware.user.CurrentUserMiddleware',
     'cms.middleware.page.CurrentPageMiddleware',
     'cms.toolbar.middleware.ToolbarMiddleware',
+    'example.sampleblog.middleware.BlogMiddleware',
     
 )
 
@@ -97,6 +98,7 @@ INSTALLED_APPS = (
     'cms.plugins.inherit',
     'mptt',
     'example.sampleapp',
+    'example.sampleblog',
     #'south',
 )
 

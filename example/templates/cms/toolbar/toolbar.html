@@ -110,6 +110,21 @@
                 </ul>
             </div>
             {% endif %}
+            
+            {% if request.toolbar_context.has_auth %}
+            <div id="cms_toolbar_pagebutton" class="cms_toolbar_pagebutton cms_toolbar_button cms_toolbar_submenubutton"><span><strong>Blog</strong><em>arrow</em></span>        
+                <ul id="cms_toolbar_page_menu" class="cms_toolbar_submenu">                
+                    <li class="first"><a href="{% url admin:sampleblog_blogpost_changelist %}"><span class="cms_toolbar_icon_move">{% trans "Change List" %}</span>{% trans "Change List" %}</a></li>
+                    {% if request.toolbar_context.blogpost %}
+                        {% if request.toolbar_context.has_add_blogpost_permission %}
+                        <li><a href="{% url admin:sampleblog_blopost_add %}?target={{ request.toolbar_context.blogpost.pk }}"><span class="cms_toolbar_icon_add_child">{% trans "add blog post" %}</span>{% trans "Add blog post" %}</a></li>
+                        {% endif %}
+                        {% if request.toolbar_context.has_delete_blogpost_permission %}<li class="last"><a href="{% url admin:sampleblog_blogpost_delete request.toolbar_context.blogpost.pk %}"><span class="cms_toolbar_icon_delete">{% trans "delete" %}</span>{% trans "Delete blog post" %}</a></li>{% endif %}
+                    {% endif%}
+                </ul>
+            </div>
+            {% endif %}
+            
             <div id="cms_toolbar_settingsbutton" class="cms_toolbar_settingsbutton cms_toolbar_button cms_toolbar_submenubutton"><span><strong>Settings</strong><em>arrow</em></span>        
                 <ul id="cms_toolbar_settings_menu" class="cms_toolbar_submenu">                
                     <li class="first"><a href="{% url admin:index %}"><span class="cms_toolbar_icon_edit">{% trans "edit" %}</span>{% trans "Site Administration" %}</a></li>
