@@ -14,6 +14,7 @@ from django.template.defaultfilters import title, safe
 from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.utils.encoding import smart_unicode
+from django.forms.widgets import Media
 
 def show_toolbar(request):
     if request.is_ajax():
@@ -103,6 +104,7 @@ class ToolbarMiddleware(object):
             if "edit" in request.GET:
                 request.session['cms_edit'] = True
         if self.show_toolbar(request):
+            request.placeholder_media = Media()
             request.toolbar_context = self.get_toolbar_context(request)
                 
     

@@ -1,5 +1,5 @@
-{% extends "base.html" %}{% load cms_tags %}
+{% extends "base.html" %}{% load cms_tags placeholder_tags %}
 
 {% block content %}
-    {% placeholder blogpost.content %}
+    {% render_placeholder blogpost.content %}
 {% endblock %}
