@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if request.toolbar_context %}
     <style type="text/css">    
-        @import "{{ CMS_MEDIA_URL }}css/toolbar.css";
+        @import "{{ request.toolbar_context.CMS_MEDIA_URL }}css/toolbar.css";
     </style>
     <script type="text/javascript" charset="utf-8">
         //<![CDATA[
@@ -14,10 +14,10 @@
         }
         //]]>
     </script>
-    <script type="text/javascript" src="{{ CMS_MEDIA_URL }}js/lib/jquery.cookie.js"></script> 
-    <script type="text/javascript" src="{{ CMS_MEDIA_URL }}js/lib/jquery.backgroundposition.js"></script> 
-    <script type="text/javascript" src="{{ CMS_MEDIA_URL }}js/tools.js"></script>
-    <script type="text/javascript" src="{{ CMS_MEDIA_URL }}js/lib/jquery.nyroModal-1.6.2.pack.js"></script>
+    <script type="text/javascript" src="{{ request.toolbar_context.CMS_MEDIA_URL }}js/lib/jquery.cookie.js"></script> 
+    <script type="text/javascript" src="{{ request.toolbar_context.CMS_MEDIA_URL }}js/lib/jquery.backgroundposition.js"></script> 
+    <script type="text/javascript" src="{{ request.toolbar_context.CMS_MEDIA_URL }}js/tools.js"></script>
+    <script type="text/javascript" src="{{ request.toolbar_context.CMS_MEDIA_URL }}js/lib/jquery.nyroModal-1.6.2.pack.js"></script>
     <script type="text/javascript" charset="utf-8">
         //<![CDATA[
         // dynamic variables for the toolbar js file
@@ -37,7 +37,7 @@
         }
         //]]>
     </script>
-    <script type="text/javascript" src="{{ CMS_MEDIA_URL }}js/toolbar.js"></script>
+    <script type="text/javascript" src="{{ request.toolbar_context.CMS_MEDIA_URL }}js/toolbar.js"></script>
     <script type="text/javascript" charset="utf-8">
         //<![CDATA[
         // Now that jQuery is done loading, put the '$' variable back to what it was...
@@ -48,14 +48,14 @@
     <div id="cms_toolbar_mini">
         <a href="#" id="cms_toolbar_openbutton" class="cms_toolbar_button"><span><strong>Open</strong></span></a>
     </div>
-    <div id="cms_toolbar" class="cms_toolbar cms_toolbar_editmode_toggle_{% if edit %}on{% else %}off{% endif%}">
+    <div id="cms_toolbar" class="cms_toolbar cms_toolbar_editmode_toggle_{% if request.toolbar_context.edit %}on{% else %}off{% endif%}">
         <div id="cms_toolbar_col1">
             <a href="http://www.django-cms.org/" id="cms_toolbar_logo"><span>django CMS</span></a>
             {% if request.toolbar_context.has_auth %}
                 {% if request.toolbar_context.page %}
                 <div id="cms_toolbar_editmode_toggle">
                     <span>{% trans "Edit mode" %}</span>
-                    <a id="cms_toolbar_edit_button_{% if edit %}on{% else %}off{% endif%}" href="#">toggle</a>
+                    <a id="cms_toolbar_edit_button_{% if request.toolbar_context.edit %}on{% else %}off{% endif%}" href="#">toggle</a>
                 </div>
                 {% endif %}
                 {% if request.toolbar_context.page.last_page_states %}
