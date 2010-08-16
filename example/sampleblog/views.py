@@ -1,5 +1,8 @@
-from django.shortcuts import render_to_response
+from django.views.generic.list_detail import object_detail
 from sampleblog.models import BlogPost
 
-def blog_post(request, post_id):
-    return render_to_response('blog/post.html', {'post': BlogPost.objects.get(pk=post_id)})
+def blogpost_detail(request, post_id):
+    return object_detail(request, queryset=BlogPost.objects.all(),
+                         object_id=post_id,
+                         template_name="sampleblog/blogpost_detail.html",
+                         template_object_name="blogpost")

@@ -9,7 +9,9 @@ urlpatterns = patterns('',
     (r'^admin/', include(admin.site.urls)),
     (r'^jsi18n/(?P<packages>\S+?)/$', 'django.views.i18n.javascript_catalog'),
     # just for testing - native way to sampleapp urls 
-    # (r'^sampleapp-native/', include('sampleapp.urls')),
+    (r'^sampleblog-native/', include('sampleblog.urls',
+                                     namespace='native',
+                                     app_name='sampleblog')),
 )
 
 if settings.DEBUG:
