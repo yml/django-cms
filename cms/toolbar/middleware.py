@@ -116,9 +116,8 @@ class ToolbarMiddleware(object):
     """
     def process_request(self, request):
         toolbar_class_string = getattr(cms_settings,"CMS_TOOLBAR_CLASS")
-        i = toolbar_class_string.rfind(".")
-        toolbar_class = getattr(import_module(toolbar_class_string[:i]),
-                                toolbar_class_string[i+1:])
+        mod, klass = toolbar_class_string.rsplit(".", 1)
+        toolbar_class = getattr(import_module(mod), klass)
         toolbar = toolbar_class(request)
         if toolbar.is_visible:
             request.placeholder_media = Media()
