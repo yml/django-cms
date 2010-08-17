@@ -7,6 +7,7 @@ from cms.utils import get_template_from_request
 from cms.utils.plugins import get_placeholders
 from django.contrib.auth import authenticate, login, logout
 from django.core.urlresolvers import reverse, NoReverseMatch
+from django.core.exceptions import ImproperlyConfigured
 from django.template.defaultfilters import title, safe
 from django.utils import simplejson
 from django.utils.importlib import import_module
@@ -100,7 +101,7 @@ class Toolbar(object):
             'has_auth':has_auth,
             'page':page,
             'templates': cms_settings.CMS_TEMPLATES,
-            'auth_error':not has_auth and 'cms_username' in self.request.POST,
+            'auth_error':not has_auth and 'cms_username' in request.POST,
             'placeholder_data':data,
             'edit':edit,
             'CMS_MEDIA_URL': cms_settings.CMS_MEDIA_URL,
@@ -117,7 +118,11 @@ class ToolbarMiddleware(object):
     def process_request(self, request):
         toolbar_class_string = getattr(cms_settings,"CMS_TOOLBAR_CLASS")
         mod, klass = toolbar_class_string.rsplit(".", 1)
-        toolbar_class = getattr(import_module(mod), klass)
+        try:
+            toolbar_class = getattr(import_module(mod), klass)
+        except ImportError, e:
+            raise ImproperlyConfigured('Error importing CMS_TOOLBAR_CLASS %s: "%s"' %
+                                   (module, e))
         toolbar = toolbar_class(request)
         if toolbar.is_visible:
             request.placeholder_media = Media()
