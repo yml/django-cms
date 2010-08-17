@@ -16,42 +16,43 @@ from django.utils import simplejson
 from django.utils.encoding import smart_unicode
 from django.forms.widgets import Media
 
+from cms.plugin_pool import plugin_pool
+from cms.utils.admin import get_admin_menu_item_context
 
-
-class ToolbarMiddleware(object):
-    """
-    Middleware to set up CMS Toolbar.
-    """
-    def show_toolbar(self, request):
-        if request.is_ajax():
+class Toolbar(object):
+    def __init__(self, request):
+        self.request = request
+    
+    @property
+    def is_visible(self):
+        if self.request.is_ajax():
             return False
         try:
-            if request.path_info.startswith(reverse("admin:index")):
+            if self.request.path_info.startswith(reverse("admin:index")):
                 return False
         except NoReverseMatch:
             pass
-        if request.path_info.startswith(urlparse.urlparse(settings.MEDIA_URL)[2]):
+        if self.request.path_info.startswith(urlparse.urlparse(settings.MEDIA_URL)[2]):
             return False
-        if "edit" in request.GET:
+        if "edit" in self.request.GET:
             return True
-        if not hasattr(request, "user"):
+        if not hasattr(self.request, "user"):
             return False
-        if not request.user.is_authenticated() or not request.user.is_staff:
+        if not self.request.user.is_authenticated() or not self.request.user.is_staff:
             return False
         return True
     
-    def get_toolbar_context(self, request):
-        from cms.plugin_pool import plugin_pool
-        from cms.utils.admin import get_admin_menu_item_context
+    @property
+    def context(self):
         """
         Renders the Toolbar.
         """
-        has_auth = request.user.is_authenticated() and request.user.is_staff
-        edit = request.session.get('cms_edit', False) and has_auth
-        page = request.current_page
+        has_auth = self.request.user.is_authenticated() and self.request.user.is_staff
+        edit = self.request.session.get('cms_edit', False) and has_auth
+        page = self.request.current_page
         move_dict = []
         if edit and page:
-            template = get_template_from_request(request)
+            template = get_template_from_request(self.request)
             placeholders = get_placeholders(template)
             for placeholder in placeholders:
                 d = {}
@@ -71,20 +72,24 @@ class ToolbarMiddleware(object):
         else:
             data = {}
         if has_auth and page:
-            context = get_admin_menu_item_context(request, page, filtered=False)
+            context = get_admin_menu_item_context(self.request, page, filtered=False)
         else:
             context = {}
         context.update({
             'has_auth':has_auth,
             'page':page,
             'templates': cms_settings.CMS_TEMPLATES,
-            'auth_error':not has_auth and 'cms_username' in request.POST,
+            'auth_error':not has_auth and 'cms_username' in self.request.POST,
             'placeholder_data':data,
             'edit':edit,
             'CMS_MEDIA_URL': cms_settings.CMS_MEDIA_URL,
         })
         return context
 
+class ToolbarMiddleware(object):
+    """
+    Middleware to set up CMS Toolbar.
+    """
     def process_request(self, request):
         if request.method == "POST":
             if "edit" in request.GET and "cms_username" in request.POST:
@@ -100,9 +105,10 @@ class ToolbarMiddleware(object):
                 request.session['cms_edit'] = False
             if "edit" in request.GET:
                 request.session['cms_edit'] = True
-        if self.show_toolbar(request):
+            toolbar = Toolbar(request)
+        if toolbar.is_visible:
             request.placeholder_media = Media()
-            request.toolbar_context = self.get_toolbar_context(request)
+            request.toolbar_context = toolbar.context
                 
     
 
