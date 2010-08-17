@@ -21,38 +21,51 @@ from cms.utils.admin import get_admin_menu_item_context
 
 class Toolbar(object):
     def __init__(self, request):
-        self.request = request
+        if request.method == "POST":
+            if "edit" in request.GET and "cms_username" in request.POST:
+                user = authenticate(username=request.POST.get('cms_username', ""), password=request.POST.get('cms_password', ""))
+                if user:
+                    login(request, user)
+            if request.user.is_authenticated() and "logout_submit" in request.POST:
+                logout(request)
+                request.POST = {}
+                request.method = 'GET'
+        if request.user.is_authenticated() and request.user.is_staff:
+            if "edit-off" in request.GET:
+                request.session['cms_edit'] = False
+            if "edit" in request.GET:
+                request.session['cms_edit'] = True
+        
+        self.is_visible = self._get_visibility(request)
     
-    @property
-    def is_visible(self):
-        if self.request.is_ajax():
+    def _get_visibility(self, request):
+        if request.is_ajax():
             return False
         try:
-            if self.request.path_info.startswith(reverse("admin:index")):
+            if request.path_info.startswith(reverse("admin:index")):
                 return False
         except NoReverseMatch:
             pass
-        if self.request.path_info.startswith(urlparse.urlparse(settings.MEDIA_URL)[2]):
+        if request.path_info.startswith(urlparse.urlparse(settings.MEDIA_URL)[2]):
             return False
-        if "edit" in self.request.GET:
+        if "edit" in request.GET:
             return True
-        if not hasattr(self.request, "user"):
+        if not hasattr(request, "user"):
             return False
-        if not self.request.user.is_authenticated() or not self.request.user.is_staff:
+        if not request.user.is_authenticated() or not request.user.is_staff:
             return False
         return True
     
-    @property
-    def context(self):
+    def get_context(self, request):
         """
         Renders the Toolbar.
         """
-        has_auth = self.request.user.is_authenticated() and self.request.user.is_staff
-        edit = self.request.session.get('cms_edit', False) and has_auth
-        page = self.request.current_page
+        has_auth = request.user.is_authenticated() and request.user.is_staff
+        edit = request.session.get('cms_edit', False) and has_auth
+        page = request.current_page
         move_dict = []
         if edit and page:
-            template = get_template_from_request(self.request)
+            template = get_template_from_request(request)
             placeholders = get_placeholders(template)
             for placeholder in placeholders:
                 d = {}
@@ -72,7 +85,7 @@ class Toolbar(object):
         else:
             data = {}
         if has_auth and page:
-            context = get_admin_menu_item_context(self.request, page, filtered=False)
+            context = get_admin_menu_item_context(request, page, filtered=False)
         else:
             context = {}
         context.update({
@@ -91,24 +104,11 @@ class ToolbarMiddleware(object):
     Middleware to set up CMS Toolbar.
     """
     def process_request(self, request):
-        if request.method == "POST":
-            if "edit" in request.GET and "cms_username" in request.POST:
-                user = authenticate(username=request.POST.get('cms_username', ""), password=request.POST.get('cms_password', ""))
-                if user:
-                    login(request, user)
-            if request.user.is_authenticated() and "logout_submit" in request.POST:
-                logout(request)
-                request.POST = {}
-                request.method = 'GET'
-        if request.user.is_authenticated() and request.user.is_staff:
-            if "edit-off" in request.GET:
-                request.session['cms_edit'] = False
-            if "edit" in request.GET:
-                request.session['cms_edit'] = True
-            toolbar = Toolbar(request)
+
+        toolbar = Toolbar(request)
         if toolbar.is_visible:
             request.placeholder_media = Media()
-            request.toolbar_context = toolbar.context
+            request.toolbar_context = toolbar.get_context(request)
                 
     
 
