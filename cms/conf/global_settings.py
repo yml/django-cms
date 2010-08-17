@@ -121,3 +121,9 @@ CMS_CACHE_PREFIX = 'cms-'
 
 # Menu cache duration
 MENU_CACHE_DURATION = 60 * 60
+
+# Class used by the ``cms.toolbar.middleware`` to calculate the
+# ``request.toolbar_context`` this variable contains a dict used
+# by the toolbar.html template.
+# The contructor will be passed a request object.
+CMS_TOOLBAR_CLASS = "cms.toolbar.middleware.Toolbar"
